@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  2×2：当前课程 + 下一节课
+  尺寸严格按 2 列 × 2 行；minWidth/minHeight 与 targetCell* 保持一致，
+  避免启动器按 min 值重新归格导致尺寸标签不对（例如显示成 3×4）。
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_compact_description"
+    android:initialLayout="@layout/widget_loading"
+    android:previewImage="@mipmap/widget_preview_compact"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable" />

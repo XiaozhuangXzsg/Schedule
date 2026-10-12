@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">娅娅课表</string>
+    <string name="tab_today">今日</string>
+    <string name="tab_week">本周</string>
+    <string name="tab_settings">设置</string>
+
+    <string name="today_title">今日课表</string>
+    <string name="week_title">本周课表</string>
+    <string name="settings_title">设置</string>
+
+    <string name="action_add">添加</string>
+    <string name="action_import">导入</string>
+    <string name="action_more">更多</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_save">保存</string>
+    <string name="action_delete">删除</string>
+    <string name="action_clear">清空</string>
+    <string name="action_confirm">确定</string>
+
+    <string name="widget_title">今日课表</string>
+    <string name="widget_description">在桌面查看今天的课程安排</string>
+    <string name="widget_compact_description">2×2 卡片：显示当前课程与下一节课</string>
+    <string name="widget_full_description">4×2 卡片：左侧待办 + 右侧课程（均可独立滑动）</string>
+    <string name="widget_full_title">待办 + 课表</string>
+    <string name="widget_compact_title">当前/下一节课</string>
+
+    <string name="life_assistant_title">校园生活助手</string>
+    <string name="laundry_timer_title">洗衣机倒计时</string>
+    <string name="laundry_start">开始计时</string>
+    <string name="laundry_stop">停止</string>
+
+    <string name="simple_mode">简洁模式</string>
+    <string name="simple_mode_desc">仅显示课程名与地点的极简色块</string>
+    <string name="fluid_cloud">流体云常驻通知</string>
+    <string name="fluid_cloud_desc">以高优先级常驻通知显示下一节课，可被 ColorOS 流体云收纳</string>
+    <string name="class_reminder">上课提醒</string>
+    <string name="class_reminder_desc">上课前按设定时间提前提醒</string>
+</resources>

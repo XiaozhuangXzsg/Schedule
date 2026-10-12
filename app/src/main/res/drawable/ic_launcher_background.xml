@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    娅娅课表 自适应图标底板：柔和的蔷薇-丁香竖向渐变，
+    与图标主体（哥伦比娅：深紫发、玫红挑染、白色羽翼）相配。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M0,0 h108 v108 h-108 z">
+        <aapt:attr name="android:fillColor" xmlns:aapt="http://schemas.android.com/aapt">
+            <gradient
+                android:startX="0"
+                android:startY="0"
+                android:endX="108"
+                android:endY="108"
+                android:type="linear">
+                <item android:offset="0" android:color="#FFFDF7FB" />
+                <item android:offset="0.55" android:color="#FFF6E9F4" />
+                <item android:offset="1" android:color="#FFE7DCF7" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>

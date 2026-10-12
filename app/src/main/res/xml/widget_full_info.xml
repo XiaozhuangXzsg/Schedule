@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  4 列宽 × 2 行高：左侧待办（独立滑动）+ 右侧课程（仅课名与地点，独立滑动）
+  minWidth/minHeight 与 targetCell* 严格对应：
+  宽度 dp = 70×4 − 30 = 250，高度 dp = 70×2 − 30 = 110
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_full_description"
+    android:initialLayout="@layout/widget_loading"
+    android:previewImage="@mipmap/widget_preview_full"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable" />

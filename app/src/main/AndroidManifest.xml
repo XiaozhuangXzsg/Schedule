@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 通知与流体云 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- 上课提醒（精确闹钟，Android 12+ 需声明；被拒绝时自动降级为 WorkManager） -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- 导入文件 / 选择图片 -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!-- 在应用内打开学校教务网站（兰州大学） -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- 日历页：只读取本机系统日历，绝不写入 -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+
+    <application
+        android:name=".TimetableApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:enableOnBackInvokedCallback="true"
+        android:theme="@style/Theme.UniversityTimetable"
+        tools:targetApi="34">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.UniversityTimetable">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- 支持从流体云 / 小组件直接跳转今日课表 -->
+            <intent-filter>
+                <action android:name="com.university.timetable.OPEN_TODAY" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- 在应用内打开兰州大学教务系统导入课表 -->
+        <activity
+            android:name=".ui.screen.LzuImportActivity"
+            android:exported="false"
+            android:label="教务导入"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 桌面卡片：2×2 —— 当前课程 + 下一节课 -->
+        <receiver
+            android:name=".widget.CompactClassesWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_compact_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_compact_info" />
+        </receiver>
+
+        <!-- 桌面卡片：2×4 —— 左侧待办 + 右侧课表（各自独立滑动） -->
+        <receiver
+            android:name=".widget.FullScheduleWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_full_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_full_info" />
+        </receiver>
+
+        <!-- 桌面小组件：今日课表（旧名称保留，指向 2×4 布局） -->
+        <receiver
+            android:name=".widget.TodayClassesWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_today_info" />
+        </receiver>
+
+        <!-- 桌面小组件：本周课表 -->
+        <receiver
+            android:name=".widget.WeekClassesWidgetReceiver"
+            android:exported="true"
+            android:label="@string/week_title">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_week_info" />
+        </receiver>
+
+        <!-- 开机后重建周期任务 -->
+        <receiver
+            android:name=".work.BootReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
+            WorkManager 使用 androidx.startup 的默认初始化（WorkManagerInitializer）。
+            请勿在此移除该 meta-data：一旦移除又未手动调用 WorkManager.initialize
+            或实现 Configuration.Provider，首次访问 WorkManager 会抛出
+            IllegalStateException 导致启动崩溃。
+        -->
+    </application>
+
+    <!-- OCR 与文件解析均在本地完成，不需要网络权限 -->
+
+</manifest>

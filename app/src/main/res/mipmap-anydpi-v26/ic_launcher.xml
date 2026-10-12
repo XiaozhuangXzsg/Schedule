@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    娅娅课表 图标：底板为柔和的蔷薇-丁香渐变，
+    前景为哥伦比娅角色立绘（位图，按 108dp 画布、内容约 74dp 居中排版）。
+    不声明 monochrome：位图前景不适合作为主题图标（Themed icon）的单色遮罩。
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_fg" />
+</adaptive-icon>

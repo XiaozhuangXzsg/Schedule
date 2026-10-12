@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="brand_seed">#2F6BFF</color>
+    <color name="brand_accent">#12B5A5</color>
+    <color name="page_background">#F6F7FB</color>
+    <color name="page_background_dark">#101114</color>
+    <color name="widget_background">#FFFFFF</color>
+    <color name="widget_background_dark">#16171C</color>
+    <color name="widget_on_surface">#16181D</color>
+    <color name="widget_on_surface_dark">#E7E7EC</color>
+
+    <!-- 卡片预览图（浅色） -->
+    <color name="widget_preview_card">#FFFFFF</color>
+    <color name="widget_preview_text">#252831</color>
+    <color name="widget_preview_muted">#B9BCC8</color>
+    <color name="widget_preview_divider">#E4E6EF</color>
+    <color name="widget_preview_accent_blue">#5B84D8</color>
+    <color name="widget_preview_accent_pink">#CE6E8F</color>
+    <color name="widget_preview_accent_teal">#3FA695</color>
+    <color name="widget_preview_accent_orange">#D99150</color>
+</resources>

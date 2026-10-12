@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  兰州大学教务系统仍是 http 站点，必须允许明文流量。
+  这里只放开 *.lzu.edu.cn 及其相关域名，其余保持默认（禁止明文）。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">lzu.edu.cn</domain>
+        <domain includeSubdomains="true">jwk.lzu.edu.cn</domain>
+        <domain includeSubdomains="true">my.lzu.edu.cn</domain>
+        <domain includeSubdomains="true">10.0.0.0</domain>
+    </domain-config>
+</network-security-config>

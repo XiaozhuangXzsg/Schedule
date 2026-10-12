@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  仅 debug 变体：一个用于把桌面卡片“钉”到主屏幕的调试入口。
+  release 不包含此文件，因此正式包不受影响。
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+
+        <activity
+            android:name="com.university.timetable.DebugPinWidgetActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
+    </application>
+
+</manifest>

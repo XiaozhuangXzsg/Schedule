@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  卡片预览图的深色配色。
+  预览图是启动器在选择器里直接绘制的静态 drawable，不会跟随应用内主题，
+  因此这里用 -night 限定符让系统深色模式下的预览与真实卡片观感一致。
+-->
+<resources>
+    <color name="widget_preview_card">#16171C</color>
+    <color name="widget_preview_text">#E7E7EC</color>
+    <color name="widget_preview_muted">#6C7080</color>
+    <color name="widget_preview_divider">#2A2C34</color>
+    <color name="widget_preview_accent_blue">#7C9BE0</color>
+    <color name="widget_preview_accent_pink">#D98BA6</color>
+    <color name="widget_preview_accent_teal">#5FBFB0</color>
+    <color name="widget_preview_accent_orange">#E0A76E</color>
+</resources>

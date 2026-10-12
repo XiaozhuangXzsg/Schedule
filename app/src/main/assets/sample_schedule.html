@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <title>示例课表（用于测试 HTML 导入）</title>
+</head>
+<body>
+<!--
+  这是供「智能导入 → HTML 课表文件」测试使用的示例。
+  真实使用时，请直接选择教务系统导出的 HTML 文件。
+  解析规则：第一行为星期表头，之后的每一行依次承载
+  课程名 / 周次 / 上课地点 / 授课教师 等属性。
+-->
+<table border="1" cellspacing="0" cellpadding="4">
+    <tr>
+        <th>节次</th>
+        <th>星期一</th>
+        <th>星期二</th>
+        <th>星期三</th>
+        <th>星期四</th>
+        <th>星期五</th>
+    </tr>
+    <tr>
+        <td>第1-2节<br/>08:00-09:50</td>
+        <td></td>
+        <td>解析几何<br/>@天山堂A408</td>
+        <td>数学分析（一）<br/>@天山堂A303</td>
+        <td></td>
+        <td>解析几何<br/>@天山堂A408</td>
+    </tr>
+    <tr>
+        <td>第3-4节<br/>10:10-12:00</td>
+        <td>高等代数（一）<br/>@天山堂A212</td>
+        <td>大学物理<br/>@电教202</td>
+        <td>高等代数（一）<br/>@天山堂B307</td>
+        <td>高级英语1<br/>@天山堂A212</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>周次</td>
+        <td>1-16周</td>
+        <td>1-16周</td>
+        <td>1-16周</td>
+        <td>2-16周(双)</td>
+        <td>1-16周</td>
+    </tr>
+    <tr>
+        <td>授课教师</td>
+        <td>林艳</td>
+        <td>张文博</td>
+        <td>林艳</td>
+        <td>李欣</td>
+        <td>杨帆</td>
+    </tr>
+</table>
+</body>
+</html>

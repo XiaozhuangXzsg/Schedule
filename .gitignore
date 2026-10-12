@@ -1,0 +1,27 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+app/build/
+*.hprof
+.kotlin/
+
+# ---- 打包产物：体积大且可复现，不进 Git（APK 请走 GitHub Releases）----
+*.zip
+*.apk
+*.aab
+/deliverables/
+
+# ---- 签名密钥：绝不公开 ----
+# 一旦 .jks 与其口令公开，任何人都能签出和正式版同签名的 APK，
+# 已安装的用户会被静默「升级」到伪造版本。
+/keystore/
+*.jks
+*.keystore
+keystore.properties
