@@ -166,10 +166,14 @@ class LzuImportActivity : ComponentActivity() {
             builtInZoomControls = true
             displayZoomControls = false
             mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-            // 桌面 UA：教务系统在手机 UA 下可能布局错乱
-            userAgentString = userAgentString
-                .replace("Mobile", "")
-                .replace("Android", "Android Desktop")
+            // 教务系统分两套界面，UA 得跟着入口走：
+            // - `jwk.lzu.edu.cn/academic/index_frame.jsp` 是**手机版**框架页，只有手机 UA 才渲染移动布局；
+            // - 其余页面（个人工作台等）反过来在手机 UA 下会布局错乱，仍按原来的桌面 UA 处理。
+            userAgentString = if (startUrl.contains("jwk.lzu.edu.cn")) {
+                userAgentString
+            } else {
+                userAgentString.replace("Mobile", "").replace("Android", "Android Desktop")
+            }
         }
 
         CookieManager.getInstance().apply {
@@ -310,8 +314,14 @@ class LzuImportActivity : ComponentActivity() {
     companion object {
         private const val JS_BRIDGE = "LzuBridge"
 
-        /** 兰州大学教务入口（用户登录后自行导航到课表页）。 */
-        const val START_URL = "http://my.lzu.edu.cn/"
+        /**
+         * 兰州大学教务入口。
+         *
+         * 用 `academic/index_frame.jsp`（**手机版**）而不是 `http://my.lzu.edu.cn/`（个人工作台）：
+         * 工作台是桌面布局的门户，手机上要缩放拖拽才能点，且登录后还要自己找教务入口；
+         * index_frame 是教务系统的移动版框架页，进去就是「个人课表」等菜单。
+         */
+        const val START_URL = "https://jwk.lzu.edu.cn/academic/index_frame.jsp"
 
         /** 直接用课表页打开时可通过该 extra 指定。 */
         const val EXTRA_START_URL = "start_url"
@@ -405,10 +415,10 @@ private fun LzuImportScreen(
                     .padding(horizontal = 14.dp, vertical = 8.dp)
             ) {
                 Text(
-                    text = "请先登录教务系统，进入本学期课表页面，点击「个人课表」，" +
+                    text = "已为你打开教务系统的手机版界面，请先登录，再打开「个人课表」，" +
                         "然后点击本软件的「导入课表」按钮。\n\n" +
-                        "顺序：① 登录教务系统 → ② 进入本学期课表 → " +
-                        "③ 点击教务系统的「个人课表」 → ④ 点击本软件右下角的「导入课表」。\n\n" +
+                        "顺序：① 登录教务系统 → ② 打开「个人课表」 → " +
+                        "③ 点击本软件右下角的「导入课表」。\n\n" +
                         "注意：「个人课表」是教务系统网页里的菜单，" +
                         "「导入课表」是本软件右下角的按钮，两者不是同一个东西。",
                     style = MaterialTheme.typography.labelMedium,

@@ -3,6 +3,24 @@
 一款面向大学生的 Android 课表应用。使用 **Kotlin + Jetpack Compose** 打造，
 深度适配 **一加 15 / ColorOS 16（水生设计语言）**，并免费开放同类应用（如 WakeUp 课程表）的付费高级能力。
 
+> **v2.1.7** — 三处改动：
+> ① **教务系统导入入口改到手机版**：`LzuImportActivity.START_URL` 由 `http://my.lzu.edu.cn/`（个人工作台）
+> 改为 **`https://jwk.lzu.edu.cn/academic/index_frame.jsp`**。工作台是桌面布局的门户，手机上要缩放拖拽
+> 才能点，登录后还得自己找教务入口；`index_frame.jsp` 是教务系统的移动版框架页，进去就是课表菜单。
+> 同时 WebView 的 UA **按入口分流**：`jwk.lzu.edu.cn` 用**手机 UA**（手机版框架页只在手机 UA 下
+> 才渲染移动布局），其余页面仍沿用原来的桌面 UA（这些页面反过来在手机 UA 下会错乱）。
+> 导入页提示条与新手引导的步骤文案已由「四步」简化为「登录 → 打开个人课表 → 导入」三步。
+> ② **「桌面卡片背景透明度」并入「个性化」分组**：原先是设置页里独立的「桌面卡片」分组，现移入
+> **个性化**模块、紧跟在「背景与透明度」入口之后，标题补全为「桌面卡片背景透明度」以免脱离分组标题后
+> 失去上下文。写入路径未变（拖动只改草稿、松手才写 DataStore 并请求刷新卡片）。
+> ③ **今日页已结束的课真正「置灰」**：之前只是给整张卡片降不透明度（`.alpha(0.55f)`）并挂一个
+> 「已结束」小字，色相还在、看着像渲染出错。新增 `ui/theme/ColorExt.kt` 的 **`Color.desaturated(amount)`**
+> —— 用 Rec.601 亮度权重把颜色往中性灰拉，**保留亮度、抽掉色相**：对比度不变（浅色主题下正文不会
+> 糊在底色上），但颜色身份消失。今日页 `CourseListRow` 用 `desaturated(0.9f)` / `desaturated(0.78f)`
+> 分别处理底色与文字，周视图 `CourseCard` 的 `isPast` 分支同步改用同一套处理，避免两处观感不一致。
+> ④ **测试**：新增 `ui/theme/ColorExtTest.kt`（5 例）锁定「amount=0 原样返回」「全去饱和为真灰」
+> 「亮度守恒」「alpha 不变」「通道差收窄」五条性质。
+
 > **v2.1.6** — 全应用的开关键换成 iOS 26 / 27 的「液态玻璃（Liquid Glass）」样式：
 > ① **新增 `ui/component/LiquidGlassSwitch.kt`**，按 Apple 对 Liquid Glass 的三条描述做：
 > **半透明材质**（底色用真 alpha，深色关态 `White 15%`、开态 `primary 94%`，能透出下方卡片色与
@@ -835,15 +853,26 @@ export JAVA_HOME=/Applications/Android\ Studio.app/Contents/jbr/Contents/Home
 - Release（已签名）：`app/build/outputs/apk/release/app-release.apk`
 
 ### 签名信息
-Release 使用项目内 `keystore/university-timetable.jks`：
 
-| 项 | 值 |
-| --- | --- |
-| Store password | `timetable2026` |
-| Key alias | `timetable` |
-| Key password | `timetable2026` |
+> **本仓库不包含签名密钥。** 密钥库与口令**故意不入库**（见 `.gitignore`）—— 一旦公开，任何人都能签出与正式版同签名的 APK，已安装的用户会被静默「升级」到伪造版本。
 
-> 若用于正式分发，请替换为你自己的密钥库（并妥善保管）。
+本机要出正式包，在项目根目录建一个 `keystore.properties`（同样已被忽略）：
+
+```properties
+storeFile=keystore/university-timetable.jks
+storePassword=你的密钥库口令
+keyAlias=timetable
+keyPassword=你的密钥口令
+```
+
+`app/build.gradle.kts` 会自动读取它；**读不到时退回 debug 签名**，所以任何人 clone 下来都能直接 `gradlew assembleRelease` 跑通构建 —— 只是产物签名不同，不能覆盖安装正式版。
+
+生成一套自己的密钥库：
+
+```bash
+keytool -genkeypair -v -keystore keystore/university-timetable.jks \
+  -alias timetable -keyalg RSA -keysize 2048 -validity 10000
+```
 
 ### 安装
 ```bash

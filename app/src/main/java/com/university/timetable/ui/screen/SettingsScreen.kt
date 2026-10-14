@@ -386,6 +386,12 @@ fun SettingsScreen(
                     subtitle = "主题色、自定义背景图、模糊度",
                     onClick = onOpenBackground
                 )
+
+                // 桌面卡片外观：目前只有背景透明度（配色 / 深浅色跟随上面的主题设置）
+                WidgetAlphaSlider(
+                    current = prefs.widgetBgAlpha,
+                    onCommit = { viewModel.setWidgetBgAlpha(it) }
+                )
             }
             }
             Spacer(Modifier.height(14.dp))
@@ -438,17 +444,6 @@ fun SettingsScreen(
                         onSelect = { viewModel.setNowProgressStyle(it) }
                     )
                 }
-            }
-            Spacer(Modifier.height(14.dp))
-        }
-
-        // 桌面卡片外观：目前只有背景透明度（配色 / 深浅色跟随上面的主题设置）
-        item {
-            SettingsGroup(title = "桌面卡片") {
-                WidgetAlphaSlider(
-                    current = prefs.widgetBgAlpha,
-                    onCommit = { viewModel.setWidgetBgAlpha(it) }
-                )
             }
             Spacer(Modifier.height(14.dp))
         }
@@ -894,7 +889,7 @@ private fun WidgetAlphaSlider(current: Float, onCommit: (Float) -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "背景透明度",
+                    text = "桌面卡片背景透明度",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )

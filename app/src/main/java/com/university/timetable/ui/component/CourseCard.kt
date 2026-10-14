@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import com.university.timetable.data.prefs.UiPreferences
 import com.university.timetable.data.repository.ClassBlock
 import com.university.timetable.ui.theme.CoursePalette
+import com.university.timetable.ui.theme.desaturated
 import com.university.timetable.util.SemesterWeeks
 
 /**
@@ -59,7 +60,7 @@ internal object CourseCardMetrics {
  *
  * - [compact] = true 时用于周视图网格（课程名 + 教师 + 地点，尽量完整显示不省略）
  * - 简洁模式（prefs.simpleMode）会进一步精简为极简色块
- * - [isPast] 表示已结束（降低不透明度），[isNow] 表示正在进行（描边高亮）
+ * - [isPast] 表示已结束（置灰），[isNow] 表示正在进行（描边高亮）
  * - [onLongClick] 用于周视图「长按课程编辑」
  */
 @Composable
@@ -74,7 +75,10 @@ fun CourseCard(
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null
 ) {
-    val (container, content) = CoursePalette.colorsFor(block.courseId, block.color, dark)
+    val (courseContainer, courseContent) = CoursePalette.colorsFor(block.courseId, block.color, dark)
+    // 已结束置灰：与今日页的 CourseListRow 用同一套处理，避免两处观感不一致
+    val container = if (isPast) courseContainer.desaturated(0.9f) else courseContainer
+    val content = if (isPast) courseContent.desaturated(0.78f) else courseContent
     val simple = prefs.simpleMode
     val shape = RoundedCornerShape(if (compact) 12.dp else 16.dp)
 
@@ -94,7 +98,7 @@ fun CourseCard(
                 )
             } else Modifier
         )
-        .alpha(if (isPast) 0.55f else 1f)
+        .alpha(if (isPast) 0.85f else 1f)
 
     if (simple) {
         // 极简模式：只保留课程名与地点

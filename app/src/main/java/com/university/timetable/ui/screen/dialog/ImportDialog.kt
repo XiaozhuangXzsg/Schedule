@@ -234,7 +234,7 @@ fun ImportDialog(
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
-                        text = "应用内打开兰州大学教务网站，登录后一键识别课表",
+                        text = "应用内打开兰州大学教务手机版，登录后一键识别课表",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )

@@ -59,6 +59,7 @@ import com.university.timetable.ui.tutorial.tutorialAnchor
 import com.university.timetable.ui.theme.CoursePalette
 import com.university.timetable.ui.theme.LocalIsDark
 import com.university.timetable.ui.theme.LocalTimetableColors
+import com.university.timetable.ui.theme.desaturated
 import com.university.timetable.util.SemesterWeeks
 import kotlinx.coroutines.delay
 import java.time.LocalTime
@@ -317,7 +318,7 @@ private fun TodaySummary(state: TodayUiState, nowMinutes: Int) {
 
 /**
  * 今日课程行：左侧课程序号与起止时间，右侧课程信息。
- * 正在上的课带主色描边，已结束的降低不透明度。
+ * 正在上的课带主色描边，已结束的**置灰**（保留亮度、抽掉色相）。
  */
 @Composable
 private fun CourseListRow(
@@ -329,10 +330,14 @@ private fun CourseListRow(
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
-    val (container, content) = CoursePalette.colorsFor(block.courseId, block.color, dark)
+    val (courseContainer, courseContent) = CoursePalette.colorsFor(block.courseId, block.color, dark)
     val colors = LocalTimetableColors.current
     val isNow = nowMinutes in block.startMinutes until block.endMinutes
     val isPast = block.endMinutes < nowMinutes
+
+    // 已结束的课置灰：抽掉色相但保留亮度，于是仍看得清，又一眼能看出这门课上完了。
+    val container = if (isPast) courseContainer.desaturated(0.9f) else courseContainer
+    val content = if (isPast) courseContent.desaturated(0.78f) else courseContent
 
     // 正在上的这节课已过去的比例：真实时间算出来的，切页面回来也一定正确。
     val span = (block.endMinutes - block.startMinutes).coerceAtLeast(1)
