@@ -88,7 +88,10 @@ fun CapsuleTabRow(
         label = "capsuleIndicatorOffset"
     )
 
-    Box(
+    // ColorOS 17 凝光视效：底栏也用统一的玻璃材质。
+    // `capsuleContainer` 自身已经带透明度，所以 tintAlpha 传 1f——只叠厚度渐变与光感描边，
+    // 不再把底色二次衰减（否则胶囊会淡到看不清边界）。
+    GlassSurface(
         modifier = modifier
             .shadow(
                 elevation = 14.dp,
@@ -96,86 +99,88 @@ fun CapsuleTabRow(
                 ambientColor = Color.Black.copy(alpha = 0.10f),
                 spotColor = Color.Black.copy(alpha = 0.16f)
             )
-            .clip(RoundedCornerShape(ContainerHeight / 2))
-            .background(colors.capsuleContainer)
             .height(ContainerHeight)
-            .onSizeChanged { containerWidthPx = it.width }
-            .padding(InnerPadding)
+            .onSizeChanged { containerWidthPx = it.width },
+        shape = RoundedCornerShape(ContainerHeight / 2),
+        tint = colors.capsuleContainer,
+        tintAlpha = 1f
     ) {
-        if (contentWidthPx > 0) {
-            Box(
-                modifier = Modifier
-                    .offset(x = indicatorOffset)
-                    .width(pillWidthDp)
-                    .height(PillHeight)
-                    .clip(PillShape)
-                    .background(colors.capsuleSelected)
-            )
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth().height(PillHeight),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            tabs.forEachIndexed { index, tab ->
-                val selection = (1f - abs(safePosition - index)).coerceIn(0f, 1f)
-                val contentColor by animateColorAsState(
-                    targetValue = if (selection > 0.5f) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        colors.mutedText
-                    },
-                    animationSpec = tween(220),
-                    label = "capsuleContent$index"
-                )
-                val iconScale by animateFloatAsState(
-                    targetValue = 1f + 0.08f * selection,
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-                    label = "capsuleScale$index"
-                )
-
+        Box(modifier = Modifier.padding(InnerPadding)) {
+            if (contentWidthPx > 0) {
                 Box(
                     modifier = Modifier
-                        .weight(1f)
+                        .offset(x = indicatorOffset)
+                        .width(pillWidthDp)
                         .height(PillHeight)
                         .clip(PillShape)
-                        .then(
-                            if (tab.anchorId != null) {
-                                Modifier.tutorialAnchor(tab.anchorId)
-                            } else {
-                                Modifier
-                            }
-                        )
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { onTabClick(index) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.graphicsLayer {
-                            scaleX = iconScale
-                            scaleY = iconScale
-                        }
-                    ) {
-                        Icon(
-                            imageVector = tab.icon,
-                            contentDescription = tab.label,
-                            tint = contentColor,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        if (selection > 0.2f) {
-                            Text(
-                                text = tab.label,
-                                color = contentColor,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier
-                                    .padding(start = (6 * selection).dp)
-                                    .graphicsLayer { alpha = ((selection - 0.2f) / 0.8f).coerceIn(0f, 1f) }
+                        .background(colors.capsuleSelected)
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth().height(PillHeight),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                tabs.forEachIndexed { index, tab ->
+                    val selection = (1f - abs(safePosition - index)).coerceIn(0f, 1f)
+                    val contentColor by animateColorAsState(
+                        targetValue = if (selection > 0.5f) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            colors.mutedText
+                        },
+                        animationSpec = tween(220),
+                        label = "capsuleContent$index"
+                    )
+                    val iconScale by animateFloatAsState(
+                        targetValue = 1f + 0.08f * selection,
+                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                        label = "capsuleScale$index"
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(PillHeight)
+                            .clip(PillShape)
+                            .then(
+                                if (tab.anchorId != null) {
+                                    Modifier.tutorialAnchor(tab.anchorId)
+                                } else {
+                                    Modifier
+                                }
                             )
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { onTabClick(index) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier.graphicsLayer {
+                                scaleX = iconScale
+                                scaleY = iconScale
+                            }
+                        ) {
+                            Icon(
+                                imageVector = tab.icon,
+                                contentDescription = tab.label,
+                                tint = contentColor,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            if (selection > 0.2f) {
+                                Text(
+                                    text = tab.label,
+                                    color = contentColor,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier
+                                        .padding(start = (6 * selection).dp)
+                                        .graphicsLayer { alpha = ((selection - 0.2f) / 0.8f).coerceIn(0f, 1f) }
+                                )
+                            }
                         }
                     }
                 }

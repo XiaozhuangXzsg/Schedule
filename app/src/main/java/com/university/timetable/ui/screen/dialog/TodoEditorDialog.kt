@@ -44,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.university.timetable.ui.component.glassLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -114,7 +115,7 @@ fun TodoEditorDialog(
                 .fillMaxWidth()
                 .heightIn(max = 660.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .glassLayer(MaterialTheme.colorScheme.surface)
                 .padding(18.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {

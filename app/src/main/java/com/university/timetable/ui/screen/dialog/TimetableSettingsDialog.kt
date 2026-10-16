@@ -38,6 +38,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.university.timetable.ui.component.glassLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -69,7 +70,7 @@ fun TimetableSettingsDialog(
                 .fillMaxWidth()
                 .heightIn(max = 640.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .glassLayer(MaterialTheme.colorScheme.surface)
                 .padding(20.dp)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -211,7 +212,7 @@ fun WidgetHelpDialog(onDismiss: () -> Unit, viewModel: MainViewModel) {
                 .fillMaxWidth()
                 .heightIn(max = 640.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .glassLayer(MaterialTheme.colorScheme.surface)
                 .padding(20.dp)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -425,7 +426,7 @@ fun BackgroundSettingsDialog(
                 .fillMaxWidth()
                 .heightIn(max = 620.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .glassLayer(MaterialTheme.colorScheme.surface)
                 .padding(20.dp)
                 .verticalScroll(rememberScrollState())
         ) {

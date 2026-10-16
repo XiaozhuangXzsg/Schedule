@@ -25,6 +25,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.university.timetable.ui.component.glassLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -48,7 +49,7 @@ fun AiActionConfirmDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(22.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .glassLayer(MaterialTheme.colorScheme.surface)
                 .padding(20.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {

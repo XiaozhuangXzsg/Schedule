@@ -269,7 +269,7 @@ private fun LaundryTimerSection(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(MaterialTheme.colorScheme.surface)
+                                    .glassLayer(MaterialTheme.colorScheme.surface)
                                     .clickable { onStartTimer(minutes, "洗衣机 $minutes 分钟") }
                                     .padding(vertical = 9.dp),
                                 contentAlignment = Alignment.Center

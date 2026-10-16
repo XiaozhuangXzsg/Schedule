@@ -41,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.university.timetable.ui.component.glassLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -132,7 +133,7 @@ fun QuickMakeupDialog(
                 .fillMaxWidth(0.94f)
                 .heightIn(max = 700.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .glassLayer(MaterialTheme.colorScheme.surface)
                 .padding(18.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {

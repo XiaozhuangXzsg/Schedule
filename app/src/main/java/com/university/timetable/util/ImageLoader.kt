@@ -15,18 +15,30 @@ import java.io.InputStream
  */
 object ImageLoader {
 
-    private const val MAX_DIMENSION = 1440
+    /** 应用内展示图片时的默认边长上限。 */
+    const val MAX_DIMENSION = 1440
 
     private val cache = androidx.collection.LruCache<String, Bitmap>(8)
 
-    fun load(context: Context, uriString: String): Bitmap? {
-        cache.get(uriString)?.let { return it }
-        val bitmap = runCatching { decode(context, Uri.parse(uriString)) }.getOrNull() ?: return null
-        cache.put(uriString, bitmap)
+    /**
+     * 解码图片。
+     *
+     * [maxDimension] 用来覆盖默认的边长上限：桌面卡片必须传更小的值，
+     * 原因见 `widget/WidgetImageBudget.kt`——Android 17 起 RemoteViews 里的
+     * Bitmap/Icon 总内存有硬上限，超了会致命崩溃。
+     *
+     * 缓存键带上 [maxDimension]，避免同一个 Uri 在不同上限下互相顶掉。
+     */
+    fun load(context: Context, uriString: String, maxDimension: Int = MAX_DIMENSION): Bitmap? {
+        val key = "$maxDimension|$uriString"
+        cache.get(key)?.let { return it }
+        val bitmap = runCatching { decode(context, Uri.parse(uriString), maxDimension) }.getOrNull()
+            ?: return null
+        cache.put(key, bitmap)
         return bitmap
     }
 
-    private fun decode(context: Context, uri: Uri): Bitmap? {
+    private fun decode(context: Context, uri: Uri, maxDimension: Int): Bitmap? {
         // 先读尺寸
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         openStream(context, uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
@@ -34,7 +46,7 @@ object ImageLoader {
         if (w <= 0 || h <= 0) return null
 
         var sample = 1
-        while (w / sample > MAX_DIMENSION || h / sample > MAX_DIMENSION) sample *= 2
+        while (w / sample > maxDimension || h / sample > maxDimension) sample *= 2
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             val source = ImageDecoder.createSource(context.contentResolver, uri)
@@ -42,7 +54,7 @@ object ImageLoader {
                 val sw = info.size.width
                 val sh = info.size.height
                 var s = 1
-                while (sw / s > MAX_DIMENSION || sh / s > MAX_DIMENSION) s *= 2
+                while (sw / s > maxDimension || sh / s > maxDimension) s *= 2
                 decoder.setTargetSampleSize(s)
                 decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
             }

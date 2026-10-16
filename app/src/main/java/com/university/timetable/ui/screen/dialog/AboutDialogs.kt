@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.university.timetable.ui.component.glassLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
@@ -66,7 +67,7 @@ fun ContactDialog(onDismiss: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .glassLayer(MaterialTheme.colorScheme.surface)
                 .padding(20.dp)
         ) {
             Text(
@@ -198,7 +199,7 @@ fun IntroDialog(onDismiss: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .glassLayer(MaterialTheme.colorScheme.surface)
                 .padding(20.dp)
         ) {
             Text(

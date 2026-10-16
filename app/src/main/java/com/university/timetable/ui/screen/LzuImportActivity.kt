@@ -51,6 +51,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.university.timetable.ui.component.glassLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -363,7 +364,7 @@ private fun LzuImportScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
+                    .glassLayer(MaterialTheme.colorScheme.surface)
                     .padding(horizontal = 4.dp, vertical = 6.dp)
             ) {
                 IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
@@ -477,7 +478,7 @@ private fun LzuImportScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(22.dp))
-                    .background(MaterialTheme.colorScheme.surface)
+                    .glassLayer(MaterialTheme.colorScheme.surface)
                     .padding(20.dp)
             ) {
                 if (importedCount != null) {

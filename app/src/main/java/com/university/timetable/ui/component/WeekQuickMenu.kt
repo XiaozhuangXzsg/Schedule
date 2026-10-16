@@ -73,7 +73,7 @@ fun WeekQuickMenu(
             modifier = Modifier
                 .fillMaxWidth(0.94f)
                 .clip(RoundedCornerShape(26.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .glassLayer(MaterialTheme.colorScheme.surface)
                 .padding(18.dp)
         ) {
             Column {

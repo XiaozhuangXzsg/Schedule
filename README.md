@@ -3,6 +3,38 @@
 一款面向大学生的 Android 课表应用。使用 **Kotlin + Jetpack Compose** 打造，
 深度适配 **一加 15 / ColorOS 16（水生设计语言）**，并免费开放同类应用（如 WakeUp 课程表）的付费高级能力。
 
+> **v2.1.8** — 面向 **Android 17 / ColorOS 17** 的「聚焦版」适配 + 凝光玻璃材质铺满全应用：
+> ① **修掉一个会杀进程的隐患**：Android 17（API 37）起，系统对 `RemoteViews` 里 Bitmap 与 Icon
+> 的**总内存**施加硬限制 `1.5 × 屏宽 × 屏高 × 4` 字节，超出时 `updateAppWidget` 抛
+> `IllegalArgumentException` 并**直接杀掉应用进程**——不是忽略、不是降级。本应用最多往卡片里放
+> 3 张待办图片，原先进程与卡片共用 1440px 上限：单张 `1440×1440×4 ≈ 8.3 MB`、三张 ≈ 24.9 MB，
+> 而本机上限只有约 21.2 MB，**已经超了**。新增 `widget/WidgetImageBudget.kt` 给卡片单开一条边长通路：
+> `remoteViewsLimitBytes()` 复刻系统公式，`maxDimension()` 按 `SHARE = 0.25` 的份额与 `imageCount`
+> 反推单张边长（`sqrt(bytes / 4)`，夹在 `MIN_PX = 128` 与 `HARD_CAP_PX = 512` 之间）。本机实测
+> 512 px 封顶，相比 1440 px 降到约 1/2.8 边长、约 1/8 内存。`util/ImageLoader.kt` 增加 `maxDimension`
+> 参数（默认仍 1440，应用内其他调用点行为不变），`widget/GlanceWidgets.kt` 的 `loadTodoImages`
+> 改走新预算。新增 `WidgetImageBudgetTest.kt`（6 例）锁定公式、份额切分、上下限与不超总额。
+> ② **`targetSdk` 36 → 37**，正式对 Android 17 声明适配。
+> ③ **凝光玻璃材质**（ColorOS 17「流体设计」三大核心之一）：新增 `ui/component/GlassSurface.kt`，
+> 提供 `GlassSurface`（大块卡片用）与 `Modifier.glassLayer`（已有 `.background()` 的场景直接替换、
+> 不改布局结构）两种入口，质感由「底色 + 纵向厚度渐变 + 1dp 上亮下暗光感描边」构成；
+> 大块卡片用 `glassCardAlpha()`（深 0.78 / 浅 0.82），弹窗用 `glassPanelAlpha()`（深 0.90 / 浅 0.92）
+> 保证正文可读。落地范围：`SettingsScreen.kt` 的 `SettingsGroup`（设置页 6 个分组卡片）、
+> `CapsuleTabRow.kt` 的底栏胶囊改为 `GlassSurface`，另有 **22 处 `.glassLayer(...)` 分布在 16 个
+> 对话框/浮层文件**；全项目 `background(MaterialTheme.colorScheme.surface)` 直接调用**残留 0 处**，
+> 合计触及 **19 个文件**。
+> ④ **踩坑**：底色不透明度第一版写成 `tint.copy(alpha = tintAlpha)`，而 `copy(alpha =)` 是**覆盖**
+> 不是相乘——`capsuleContainer` 这类本身就带透明度的主题色被 `copy(alpha = 1f)` 变成实色，
+> 底栏胶囊在真机上直接变成一整块不透明粉色。改为 `tint.copy(alpha = tint.alpha * tintAlpha)`
+> 后两种场景都对：实色传默认值即可，半透明色传 `1f` 表示「保持原样，只叠玻璃层」。
+> 这个 bug 单元测试覆盖不到，是**真机截图对比**发现的。
+> ⑤ **`ColorOS 17` 的流体动效与柔性反馈、以及把卡片加进负一屏，本版都没做**。负一屏经查
+> 架构上进不去：`dumpsys appwidget` 显示设备上唯一的 `AppWidgetHost` 是 `com.android.launcher`，
+> 负一屏 `com.coloros.assistantscreen` **不是** `AppWidgetHost`；可行路径只有 OPPO 的「智慧服务卡片」
+> （快应用卡片 + `com.oplus.seedling.action.SEEDLING_CARD`，需在 open.oppomobile.com 注册并过审），
+> 方案已写成 `deliverables/娅娅课表-v2.1.8/OPPO-负一屏卡片接入方案.md`。
+> ⑥ **测试**：16 个测试类 / **188 个用例 / 0 failures / 0 errors**（v2.1.7 为 182，本版 +6）。
+
 > **v2.1.7** — 三处改动：
 > ① **教务系统导入入口改到手机版**：`LzuImportActivity.START_URL` 由 `http://my.lzu.edu.cn/`（个人工作台）
 > 改为 **`https://jwk.lzu.edu.cn/academic/index_frame.jsp`**。工作台是桌面布局的门户，手机上要缩放拖拽

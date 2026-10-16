@@ -342,12 +342,18 @@ object WidgetDataLoader {
         )
     }
 
-    /** 无待办文字时，读取待办里的图片（最多 3 张）用于卡片展示。 */
+    /**
+     * 无待办文字时，读取待办里的图片（最多 3 张）用于卡片展示。
+     *
+     * 必须按 [WidgetImageBudget] 算出的更小边长解码：Android 17 起 RemoteViews 内
+     * Bitmap/Icon 的总内存有硬上限，用应用内的 1440px 上限解码 3 张会超限并**致命崩溃**。
+     */
     private suspend fun loadTodoImages(context: Context, todos: List<TodoItem>): List<Bitmap> {
         val uris = todos.flatMap { it.images }.take(TodoItem.MAX_IMAGES)
         if (uris.isEmpty()) return emptyList()
+        val maxDimension = WidgetImageBudget.maxDimensionFor(context, uris.size)
         return uris.mapNotNull { uri ->
-            runCatching { ImageLoader.load(context, uri) }.getOrNull()
+            runCatching { ImageLoader.load(context, uri, maxDimension) }.getOrNull()
         }
     }
 

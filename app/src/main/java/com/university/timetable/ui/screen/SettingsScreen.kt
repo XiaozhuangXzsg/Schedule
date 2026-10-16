@@ -71,6 +71,8 @@ import com.university.timetable.data.prefs.PastCourseMode
 import com.university.timetable.data.prefs.TransitionStyle
 import com.university.timetable.data.prefs.UiPreferences
 import com.university.timetable.ui.MainViewModel
+import com.university.timetable.ui.component.GlassRadius
+import com.university.timetable.ui.component.GlassSurface
 import com.university.timetable.ui.component.SectionHeader
 import com.university.timetable.ui.screen.dialog.SettingSwitch
 import com.university.timetable.ui.theme.LocalIsDark
@@ -707,18 +709,17 @@ private fun SettingsGroup(
     title: String,
     content: @Composable () -> Unit
 ) {
-    val colors = LocalTimetableColors.current
     Column(modifier = Modifier.padding(horizontal = 20.dp)) {
         SectionHeader(title = title)
         Spacer(Modifier.height(8.dp))
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(colors.surfaceCard)
-                .padding(vertical = 6.dp, horizontal = 6.dp)
+        // ColorOS 17 凝光视效：分组卡片改用统一的玻璃材质（半透明底 + 厚度渐变 + 光感描边）。
+        GlassSurface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(GlassRadius.Card)
         ) {
-            content()
+            Column(modifier = Modifier.padding(vertical = 6.dp, horizontal = 6.dp)) {
+                content()
+            }
         }
     }
 }
