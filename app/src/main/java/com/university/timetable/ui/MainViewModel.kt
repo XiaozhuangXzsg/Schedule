@@ -741,8 +741,11 @@ class MainViewModel(
     /** 已上完课程的显示方式：置灰 / 隐藏。 */
     fun setPastCourseMode(mode: Int) = viewModelScope.launch { prefsRepo.setPastCourseMode(mode) }
 
-    /** 子页面转场动画风格：交叉淡化 / 缩放。 */
+    /** 子页面转场动画风格：交叉淡化 / 缩放 / 流体滑入。 */
     fun setTransitionStyle(style: Int) = viewModelScope.launch { prefsRepo.setTransitionStyle(style) }
+
+    /** 触感反馈（柔性反馈）开关。 */
+    fun setHapticFeedback(value: Boolean) = viewModelScope.launch { prefsRepo.setHapticFeedback(value) }
 
     /** 关闭首次启动的软件说明后写入标记，之后不再自动弹出。 */
     fun dismissIntro() = viewModelScope.launch { prefsRepo.setIntroSeen(true) }

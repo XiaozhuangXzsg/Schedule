@@ -3,6 +3,31 @@
 一款面向大学生的 Android 课表应用。使用 **Kotlin + Jetpack Compose** 打造，
 深度适配 **一加 15 / ColorOS 16（水生设计语言）**，并免费开放同类应用（如 WakeUp 课程表）的付费高级能力。
 
+> **v2.1.9** — ColorOS 17「流体设计」深度版 + 桌面卡片液态玻璃 + 4×2 小组件版式重构：
+> ① **流体动效**：`TransitionStyle` 新增 `FLUID`，子页面转场不再用固定时长 tween，改由弹簧驱动
+> `slideInHorizontally(it / 3)` + `scaleIn(0.94f)` + `fadeIn`，进入用
+> `spring(DampingRatioLowBouncy, StiffnessMediumLow)`、退出用 `spring(NoBouncy, StiffnessMedium)`。
+> 保留的约 5% 过冲是**故意的**——页面滑到位后「顿一下再吸住」才有质量感，换成 `NoBouncy`
+> 就和普通减速没有体感差别。设置页「页面转场动画」因此从两档变三档。
+> ② **柔性反馈**：新增 `ui/component/SoftHaptics.kt`，只用 `CLOCK_TICK` / `CONTEXT_CLICK` /
+> `KEYBOARD_TAP` 三个**极轻**的系统 tick，刻意不用 `LONG_PRESS`（那一下是重震，落在开关和切页上太暴躁）。
+> 通过 `LocalHapticsEnabled` + `rememberSoftHaptics()` 下发，接线在 `LiquidGlassSwitch`（所有设置开关、
+> AI 多模态开关）、`CapsuleTabRow`（切标签页）、`CourseCard` / `CourseListRow`（长按进编辑）三处；
+> 新增偏好 `hapticFeedback`（默认开）与设置页「触感反馈」开关。
+> ③ **顺带修掉一个既有 bug**：`TodayScreen.kt` 的 `CourseListRow` 声明了 `onLongClick`、调用方也传了值，
+> 但行内只有 `.clickable(onClick = …)` —— **今日页长按课程进编辑从来没生效过**。改为
+> `combinedClickable` 后恢复。
+> ④ **桌面卡片液态玻璃**：Glance 的 `background()` 只接受 `ColorProvider`、拿不到 `Brush`，做不出
+> Compose 那种多层渐变玻璃，所以改用「底色 + 两条 1dp 边缘」表达厚度：`WidgetTheme` 新增 `rimTop` /
+> `rimBottom`，深色取白 26% / 黑 30%，浅色取黑 7% / 黑 5%（浅色卡片是纯白，白色高光看不见）。
+> 三张卡片顶部画高光条、底部画暗边。
+> ⑤ **4×2 小组件版式重构**：`showTodoPane = todos.isNotEmpty() || images.isNotEmpty()`，无待办时
+> **整条待办列与分隔线不渲染**，课程栏独占全宽（原来的「暂无待办 / 点卡片添加」分支已删除）。
+> 点击区域同时重做——外层 `Column` 摘掉 `.clickable`（原来整卡可点，会和课程栏滑动抢手势），
+> 只留标题行 `Row(fillMaxWidth().clickable(openTodayIntent()))` 可点。真机实测：点课程行
+> `topResumedActivity` 仍是 launcher，点标题行才拉起 `MainActivity`。
+> ⑥ 构建 **188 用例 / 0 失败**（本次未新增用例），`versionCode = 219`。
+
 > **v2.1.8** — 面向 **Android 17 / ColorOS 17** 的「聚焦版」适配 + 凝光玻璃材质铺满全应用：
 > ① **修掉一个会杀进程的隐患**：Android 17（API 37）起，系统对 `RemoteViews` 里 Bitmap 与 Icon
 > 的**总内存**施加硬限制 `1.5 × 屏宽 × 屏高 × 4` 字节，超出时 `updateAppWidget` 抛

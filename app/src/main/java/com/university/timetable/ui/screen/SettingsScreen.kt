@@ -239,7 +239,8 @@ fun SettingsScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf(
                             TransitionStyle.CROSSFADE to "交叉淡化",
-                            TransitionStyle.ZOOM to "缩放淡入"
+                            TransitionStyle.ZOOM to "缩放淡入",
+                            TransitionStyle.FLUID to "流体滑入"
                         ).forEach { (value, label) ->
                             val selected = prefs.transitionStyle == value
                             Box(
@@ -270,6 +271,16 @@ fun SettingsScreen(
                         color = colors.mutedText
                     )
                 }
+
+                // 柔性反馈：开关、切页、长按时的极轻触感
+                SettingSwitch("触感反馈", prefs.hapticFeedback) { viewModel.setHapticFeedback(it) }
+                Text(
+                    text = "开关、切换页面、长按课程时的轻微震动；关闭后完全不震",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.mutedText,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                Spacer(Modifier.height(6.dp))
 
                 // 已上课程显示方式
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {

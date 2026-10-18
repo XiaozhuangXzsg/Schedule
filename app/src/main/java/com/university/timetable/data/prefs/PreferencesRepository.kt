@@ -41,6 +41,14 @@ object TransitionStyle {
 
     /** 缩放淡入 */
     const val ZOOM = 1
+
+    /**
+     * 流体滑入（ColorOS 17「流体设计」动效）。
+     *
+     * 与 [CROSSFADE] / [ZOOM] 的区别：不用固定时长的 tween，改用低弹弹簧，
+     * 位移更远、带轻微回弹与缩放，收尾不是「准时停住」而是「弹到静止」。
+     */
+    const val FLUID = 2
 }
 
 /**
@@ -152,7 +160,14 @@ data class UiPreferences(
      * 1 表示完全不透明；调低后卡片会透出桌面壁纸。
      * 只作用于桌面卡片，应用内页面不受影响。
      */
-    val widgetBgAlpha: Float = 1f
+    val widgetBgAlpha: Float = 1f,
+    /**
+     * 触感反馈（柔性反馈）开关。
+     *
+     * 开启后轻点开关、切换标签页、长按课程等操作会触发极轻的系统 tick。
+     * 系统层面「触感反馈」总开关关闭时，这些调用会自动失效。
+     */
+    val hapticFeedback: Boolean = true
 ) {
     companion object {
         const val UNSET = -1
@@ -224,6 +239,7 @@ class PreferencesRepository(private val context: Context) {
         val nowProgressStyle = intPreferencesKey("now_progress_style")
         val tutorialSeen = booleanPreferencesKey("tutorial_seen")
         val widgetBgAlpha = floatPreferencesKey("widget_bg_alpha")
+        val hapticFeedback = booleanPreferencesKey("haptic_feedback")
     }
 
     val preferences: Flow<UiPreferences> = context.dataStore.data.map { p ->
@@ -267,7 +283,8 @@ class PreferencesRepository(private val context: Context) {
             nowProgressStyle = p[Keys.nowProgressStyle] ?: NowProgressStyle.LEFT_TO_RIGHT,
             tutorialSeen = p[Keys.tutorialSeen] ?: false,
             widgetBgAlpha = (p[Keys.widgetBgAlpha] ?: 1f)
-                .coerceIn(UiPreferences.MIN_WIDGET_BG_ALPHA, 1f)
+                .coerceIn(UiPreferences.MIN_WIDGET_BG_ALPHA, 1f),
+            hapticFeedback = p[Keys.hapticFeedback] ?: true
         )
     }
 
@@ -355,6 +372,8 @@ class PreferencesRepository(private val context: Context) {
     /** 桌面卡片背景不透明度；限制在 [UiPreferences.MIN_WIDGET_BG_ALPHA]~1 之间。 */
     suspend fun setWidgetBgAlpha(alpha: Float) =
         edit { it[Keys.widgetBgAlpha] = alpha.coerceIn(UiPreferences.MIN_WIDGET_BG_ALPHA, 1f) }
+
+    suspend fun setHapticFeedback(value: Boolean) = edit { it[Keys.hapticFeedback] = value }
 
     suspend fun setPageBackground(page: String, color: Int) = edit { prefs ->
         when (page) {

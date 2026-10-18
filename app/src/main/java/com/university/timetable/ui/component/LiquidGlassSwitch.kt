@@ -93,6 +93,8 @@ fun LiquidGlassSwitch(
         )
     }
 
+    val haptics = rememberSoftHaptics()
+
     val toggleModifier = if (onCheckedChange != null) {
         Modifier.toggleable(
             value = checked,
@@ -100,7 +102,11 @@ fun LiquidGlassSwitch(
             interactionSource = interactionSource,
             indication = null,
             role = Role.Switch,
-            onValueChange = onCheckedChange
+            onValueChange = { next ->
+                // 柔性反馈：开关拨动是「中等一档」的触感。
+                haptics.toggle()
+                onCheckedChange(next)
+            }
         )
     } else {
         Modifier

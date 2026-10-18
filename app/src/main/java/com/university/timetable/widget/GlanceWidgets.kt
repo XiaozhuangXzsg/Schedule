@@ -406,7 +406,11 @@ data class WidgetTheme(
     val title: GlanceColorProvider,
     val muted: GlanceColorProvider,
     val divider: GlanceColorProvider,
-    val todayBg: GlanceColorProvider
+    val todayBg: GlanceColorProvider,
+    /** 卡片顶部的凝光高光边（ColorOS 17 液态玻璃的「镜面反射」）。 */
+    val rimTop: GlanceColorProvider,
+    /** 卡片底部的厚度暗边（玻璃的「厚度感」）。 */
+    val rimBottom: GlanceColorProvider
 )
 /** 把一套 [com.university.timetable.ui.theme.TimetableScheme] 映射成卡片的 [WidgetTheme]。 */
 private fun widgetThemeOf(
@@ -427,7 +431,17 @@ private fun widgetThemeOf(
         title = FixedColorProvider(scheme.colorScheme.onSurface.toArgb()),
         muted = FixedColorProvider(scheme.extras.mutedText.toArgb()),
         divider = FixedColorProvider(scheme.extras.gridLine.toArgb()),
-        todayBg = FixedColorProvider(scheme.colorScheme.surfaceVariant.toArgb())
+        todayBg = FixedColorProvider(scheme.colorScheme.surfaceVariant.toArgb()),
+        // 液态玻璃的上下描边。深色卡片用白色高光最像玻璃；浅色卡片上白色高光会
+        // 融进白底看不见，所以浅色改用极淡的黑色边——观感上等价于一条「棱」。
+        rimTop = FixedColorProvider(
+            if (dark) withAlpha(0xFFFFFFFF.toInt(), 0.26f)
+            else withAlpha(0xFF000000.toInt(), 0.07f)
+        ),
+        rimBottom = FixedColorProvider(
+            if (dark) withAlpha(0xFF000000.toInt(), 0.30f)
+            else withAlpha(0xFF000000.toInt(), 0.05f)
+        )
     )
 }
 
@@ -437,7 +451,9 @@ private val FallbackWidgetTheme = WidgetTheme(
     title = ColorProvider(day = Color(0xFF16181D), night = Color(0xFFE7E7EC)),
     muted = ColorProvider(day = Color(0xFF8E909B), night = Color(0xFF9EA1AD)),
     divider = ColorProvider(day = Color(0xFFEAEBF2), night = Color(0xFF2A2C34)),
-    todayBg = ColorProvider(day = Color(0xFFF1F3FB), night = Color(0xFF20222A))
+    todayBg = ColorProvider(day = Color(0xFFF1F3FB), night = Color(0xFF20222A)),
+    rimTop = ColorProvider(day = Color(0x12000000), night = Color(0x42FFFFFF)),
+    rimBottom = ColorProvider(day = Color(0x0D000000), night = Color(0x4D000000))
 )
 
 @Composable
@@ -500,6 +516,17 @@ private fun CompactContent(data: WidgetData) {
             .padding(12.dp)
             .clickable(openTodayIntent())
     ) {
+        // 顶部凝光高光边
+        Box(
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(theme.rimTop)
+                .cornerRadius(1.dp)
+        ) {}
+
+        Spacer(GlanceModifier.height(4.dp))
+
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically
@@ -581,6 +608,15 @@ private fun CompactContent(data: WidgetData) {
                 )
             }
         }
+
+        // 底部厚度暗边
+        Box(
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(theme.rimBottom)
+                .cornerRadius(1.dp)
+        ) {}
     }
 }
 
@@ -610,17 +646,36 @@ private fun FullContent(data: WidgetData) {
         return
     }
 
+    // 待办栏只在「真的有东西可显示」时才占版面：没有待办、也没有待办图片时，
+    // 连同分隔线一起隐藏，把宽度整块让给课程。4×2 本来就窄，
+    // 留一栏「暂无待办」的占位提示既浪费版面，又让课程只能挤在半边。
+    val showTodoPane = data.todos.isNotEmpty() || data.images.isNotEmpty()
+
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(theme.cardBg)
             .cornerRadius(20.dp)
             .padding(12.dp)
-            .clickable(openTodayIntent())
     ) {
-        // 标题行
+        // 顶部凝光高光边（ColorOS 17 液态玻璃）
+        Box(
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(theme.rimTop)
+                .cornerRadius(1.dp)
+        ) {}
+
+        Spacer(GlanceModifier.height(6.dp))
+
+        // 标题行：整张卡片上**唯一**能点开软件的区域。
+        // 课程栏要留给上下滑动，所以卡片本身不再整体可点——
+        // 否则想滑课表时很容易滑成「点开软件」。
         Row(
-            modifier = GlanceModifier.fillMaxWidth(),
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .clickable(openTodayIntent()),
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
             Text(
@@ -647,62 +702,53 @@ private fun FullContent(data: WidgetData) {
         // 左：待办（前 3 条）  |  右：课程（前 5 条）
         Row(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
 
-            // ---- 左列：待办 ----
-            Column(modifier = GlanceModifier.defaultWeight().fillMaxHeight()) {
-                Text(
-                    text = "待办",
-                    style = TextStyle(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 10.sp,
-                        color = theme.muted
-                    ),
-                    maxLines = 1
-                )
-                Spacer(GlanceModifier.height(4.dp))
+            if (showTodoPane) {
+                // ---- 左列：待办 ----
+                Column(modifier = GlanceModifier.defaultWeight().fillMaxHeight()) {
+                    Text(
+                        text = "待办",
+                        style = TextStyle(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp,
+                            color = theme.muted
+                        ),
+                        maxLines = 1
+                    )
+                    Spacer(GlanceModifier.height(4.dp))
 
-                if (data.todos.isNotEmpty()) {
-                    // 不要用 LazyColumn：启动器把集合条目视图当独立子组件 inflate 时
-                    // appWidgetId 仍为 0，会被换成常驻的「无法添加微件。」错误视图。
-                    Column(modifier = GlanceModifier.fillMaxWidth()) {
-                        data.todos.take(3).forEach { todo ->
-                            TodoRow(todo, theme)
-                            Spacer(GlanceModifier.height(4.dp))
+                    if (data.todos.isNotEmpty()) {
+                        // 不要用 LazyColumn：启动器把集合条目视图当独立子组件 inflate 时
+                        // appWidgetId 仍为 0，会被换成常驻的「无法添加微件。」错误视图。
+                        Column(modifier = GlanceModifier.fillMaxWidth()) {
+                            data.todos.take(3).forEach { todo ->
+                                TodoRow(todo, theme)
+                                Spacer(GlanceModifier.height(4.dp))
+                            }
                         }
+                    } else {
+                        androidx.glance.Image(
+                            provider = bitmapProvider(data.images.first()),
+                            contentDescription = "待办图片",
+                            modifier = GlanceModifier
+                                .fillMaxWidth()
+                                .height(84.dp)
+                                .cornerRadius(12.dp)
+                        )
                     }
-                } else if (data.images.isNotEmpty()) {
-                    androidx.glance.Image(
-                        provider = bitmapProvider(data.images.first()),
-                        contentDescription = "待办图片",
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .height(84.dp)
-                            .cornerRadius(12.dp)
-                    )
-                } else {
-                    Text(
-                        text = "暂无待办",
-                        style = TextStyle(fontSize = 10.sp, color = theme.muted),
-                        maxLines = 1
-                    )
-                    Text(
-                        text = "点卡片添加",
-                        style = TextStyle(fontSize = 9.sp, color = theme.muted),
-                        maxLines = 1
-                    )
                 }
+
+                Spacer(GlanceModifier.width(8.dp))
+
+                // 竖直分隔线
+                Box(
+                    modifier = GlanceModifier
+                        .width(1.dp)
+                        .fillMaxHeight()
+                        .background(theme.divider)
+                ) {}
+
+                Spacer(GlanceModifier.width(8.dp))
             }
-
-            Spacer(GlanceModifier.width(8.dp))
-
-            // 竖直分隔线
-            Box(
-                modifier = GlanceModifier
-                    .width(1.dp)
-                    .fillMaxHeight()
-                    .background(theme.divider)
-            ) {}
-
-            Spacer(GlanceModifier.width(8.dp))
 
             // ---- 右列：课程 ----
             Column(modifier = GlanceModifier.defaultWeight().fillMaxHeight()) {
@@ -744,6 +790,16 @@ private fun FullContent(data: WidgetData) {
                 }
             }
         }
+
+        // 底部厚度暗边：顶亮底暗夹起来，玻璃才有「一块实体」的厚度感，
+        // 而不是一张半透明的贴纸。
+        Box(
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(theme.rimBottom)
+                .cornerRadius(1.dp)
+        ) {}
     }
 }
 
@@ -765,10 +821,23 @@ private fun TomorrowContent(tomorrow: WidgetTomorrow, theme: WidgetTheme) {
             .background(theme.cardBg)
             .cornerRadius(20.dp)
             .padding(12.dp)
-            .clickable(openTodayIntent())
     ) {
+        // 顶部凝光高光边
+        Box(
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(theme.rimTop)
+                .cornerRadius(1.dp)
+        ) {}
+
+        Spacer(GlanceModifier.height(8.dp))
+
+        // 只有标题行能点开软件；下方的课程格保留自己的滑动交互。
         Row(
-            modifier = GlanceModifier.fillMaxWidth(),
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .clickable(openTodayIntent()),
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
             Text(
@@ -842,6 +911,15 @@ private fun TomorrowContent(tomorrow: WidgetTomorrow, theme: WidgetTheme) {
                 modifier = GlanceModifier.fillMaxWidth().defaultWeight()
             )
         }
+
+        // 底部厚度暗边
+        Box(
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(theme.rimBottom)
+                .cornerRadius(1.dp)
+        ) {}
     }
 }
 

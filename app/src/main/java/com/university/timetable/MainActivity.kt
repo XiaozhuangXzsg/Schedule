@@ -24,6 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -35,6 +36,7 @@ import androidx.compose.ui.platform.LocalView
 import com.university.timetable.ui.MainViewModel
 import com.university.timetable.ui.TimetableAppRoot
 import com.university.timetable.ui.ai.AiViewModel
+import com.university.timetable.ui.component.LocalHapticsEnabled
 import com.university.timetable.ui.theme.UniversityTimetableTheme
 
 class MainActivity : ComponentActivity() {
@@ -77,24 +79,29 @@ class MainActivity : ComponentActivity() {
                 themePresetIndex = prefs.themePreset,
                 columbina = prefs.columbinaStyle
             ) {
-                // 系统状态栏的文字/图标颜色跟随深浅模式：
-                // 浅色模式用深色图标，深色模式用浅色图标，两种模式下都清晰可见。
-                val view = LocalView.current
-                if (!view.isInEditMode) {
-                    SideEffect {
-                        val window = (view.context as? android.app.Activity)?.window ?: return@SideEffect
-                        val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
-                        controller.isAppearanceLightStatusBars = !dark
-                        controller.isAppearanceLightNavigationBars = !dark
+                // 触感反馈开关：在整棵 UI 树上生效，子组件通过 rememberSoftHaptics() 取用。
+                CompositionLocalProvider(
+                    LocalHapticsEnabled provides prefs.hapticFeedback
+                ) {
+                    // 系统状态栏的文字/图标颜色跟随深浅模式：
+                    // 浅色模式用深色图标，深色模式用浅色图标，两种模式下都清晰可见。
+                    val view = LocalView.current
+                    if (!view.isInEditMode) {
+                        SideEffect {
+                            val window = (view.context as? android.app.Activity)?.window ?: return@SideEffect
+                            val controller = androidx.core.view.WindowCompat.getInsetsController(window, view)
+                            controller.isAppearanceLightStatusBars = !dark
+                            controller.isAppearanceLightNavigationBars = !dark
+                        }
                     }
-                }
 
-                TimetableAppRoot(
-                    viewModel = viewModel,
-                    aiViewModel = aiViewModel,
-                    darkTheme = dark,
-                    startOnToday = openToday
-                )
+                    TimetableAppRoot(
+                        viewModel = viewModel,
+                        aiViewModel = aiViewModel,
+                        darkTheme = dark,
+                        startOnToday = openToday
+                    )
+                }
             }
         }
     }

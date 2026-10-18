@@ -81,6 +81,7 @@ fun CourseCard(
     val content = if (isPast) courseContent.desaturated(0.78f) else courseContent
     val simple = prefs.simpleMode
     val shape = RoundedCornerShape(if (compact) 12.dp else 16.dp)
+    val haptics = rememberSoftHaptics()
 
     val base = modifier
         .clip(shape)
@@ -94,7 +95,11 @@ fun CourseCard(
             if (onClick != null || onLongClick != null) {
                 Modifier.combinedClickable(
                     onClick = { onClick?.invoke() },
-                    onLongClick = { onLongClick?.invoke() }
+                    onLongClick = {
+                        // 柔性反馈：长按进入编辑，给一记「按键感」，让用户确认长按已生效。
+                        if (onLongClick != null) haptics.confirm()
+                        onLongClick?.invoke()
+                    }
                 )
             } else Modifier
         )

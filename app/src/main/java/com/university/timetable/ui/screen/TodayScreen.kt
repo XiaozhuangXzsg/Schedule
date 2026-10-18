@@ -2,6 +2,7 @@ package com.university.timetable.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +54,7 @@ import com.university.timetable.ui.component.AppTopBar
 import com.university.timetable.ui.component.EmptyState
 import com.university.timetable.ui.component.LifeAssistantCard
 import com.university.timetable.ui.component.SectionHeader
+import com.university.timetable.ui.component.rememberSoftHaptics
 import com.university.timetable.ui.component.waveProgress
 import com.university.timetable.ui.tutorial.TutorialAnchors
 import com.university.timetable.ui.tutorial.tutorialAnchor
@@ -332,6 +334,7 @@ private fun CourseListRow(
 ) {
     val (courseContainer, courseContent) = CoursePalette.colorsFor(block.courseId, block.color, dark)
     val colors = LocalTimetableColors.current
+    val haptics = rememberSoftHaptics()
     val isNow = nowMinutes in block.startMinutes until block.endMinutes
     val isPast = block.endMinutes < nowMinutes
 
@@ -367,7 +370,14 @@ private fun CourseListRow(
                     Modifier
                 }
             )
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    // 柔性反馈：长按进编辑，给一记「按键感」。
+                    haptics.confirm()
+                    onLongClick()
+                }
+            )
             .padding(horizontal = 14.dp, vertical = 12.dp)
     ) {
         // 左侧时间列

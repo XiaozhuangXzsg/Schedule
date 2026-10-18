@@ -71,6 +71,7 @@ fun CapsuleTabRow(
     val colors = LocalTimetableColors.current
     val density = LocalDensity.current
     val count = tabs.size.coerceAtLeast(1)
+    val haptics = rememberSoftHaptics()
 
     var containerWidthPx by remember { mutableIntStateOf(0) }
     val paddingPx = with(density) { (InnerPadding * 2).toPx() }
@@ -153,7 +154,11 @@ fun CapsuleTabRow(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null
-                            ) { onTabClick(index) },
+                            ) {
+                                // 柔性反馈：切换标签页给最轻的一档 tick。
+                                haptics.tick()
+                                onTabClick(index)
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Row(
