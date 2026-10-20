@@ -55,7 +55,7 @@ import com.university.timetable.importer.ScheduleCsvParser
 import com.university.timetable.importer.ScheduleHtmlParser
 import com.university.timetable.importer.ScheduleTextParser
 import com.university.timetable.ui.MainViewModel
-import com.university.timetable.ui.screen.LzuImportActivity
+import com.university.timetable.ui.screen.UniversityPickerActivity
 import com.university.timetable.ui.tutorial.TutorialAnchors
 import com.university.timetable.ui.tutorial.tutorialAnchor
 import com.university.timetable.ui.theme.LocalTimetableColors
@@ -197,7 +197,7 @@ fun ImportDialog(
 
             Spacer(Modifier.height(16.dp))
 
-            // 应用内登录教务系统直接导入（兰州大学）
+            // 应用内登录教务系统直接导入（全国高校，先选校）
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -208,7 +208,7 @@ fun ImportDialog(
                     // 它的 boundsInRoot() 与主窗口引导层坐标系不一致，不能用来挖洞。
                     .tutorialAnchor(TutorialAnchors.IMPORT_DIALOG_ENTRY)
                     .clickable(enabled = !busy) {
-                        context.startActivity(LzuImportActivity.intent(context))
+                        context.startActivity(UniversityPickerActivity.intent(context))
                     }
                     .padding(16.dp)
             ) {
@@ -235,7 +235,7 @@ fun ImportDialog(
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
-                        text = "应用内打开兰州大学教务手机版，登录后一键识别课表",
+                        text = "全国 347 所高校，选校后在内置浏览器里登录并导入",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )

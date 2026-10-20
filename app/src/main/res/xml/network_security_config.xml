@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  兰州大学教务系统仍是 http 站点，必须允许明文流量。
-  这里只放开 *.lzu.edu.cn 及其相关域名，其余保持默认（禁止明文）。
+  v2.2.0 起「从教务系统导入课表」覆盖全国 347 所高校，其中 121 所的入口是 http 站点
+  （不少是校园网内的裸 IP + 端口，例如 http://119.145.248.32:84/jwglxt/xtgl/login_slogin.html）。
+
+  逐个列举域名既不可维护也不可靠：域名与 IP 会随学校调整而变，漏一个就是
+  「网页无法打开 net::ERR_CLEARTEXT_NOT_PERMITTED」。既然这些页面只在内置 WebView 里加载，
+  且都是学校自己的教务系统，这里整体放开明文流量。
+
+  应用自身的网络请求（AI 助手走用户配置的 OpenAI 兼容接口）全部是 https，
+  不受这条配置影响——它只是**允许**明文，并不会把 https 降级。
 -->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="false" />
-
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">lzu.edu.cn</domain>
-        <domain includeSubdomains="true">jwk.lzu.edu.cn</domain>
-        <domain includeSubdomains="true">my.lzu.edu.cn</domain>
-        <domain includeSubdomains="true">10.0.0.0</domain>
-    </domain-config>
+    <base-config cleartextTrafficPermitted="true" />
 </network-security-config>

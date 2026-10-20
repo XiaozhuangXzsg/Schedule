@@ -97,7 +97,8 @@ class LzuImportActivity : ComponentActivity() {
     private var webView: WebView? = null
     private val scope = CoroutineScope(Dispatchers.Main)
 
-    private var pageTitle by mutableStateOf("兰州大学教务")
+    private var pageTitle by mutableStateOf("")
+    private var universityName by mutableStateOf<String?>(null)
     private var pageUrl by mutableStateOf(START_URL)
     private var loading by mutableStateOf(true)
     private var busy by mutableStateOf(false)
@@ -119,11 +120,15 @@ class LzuImportActivity : ComponentActivity() {
         })
 
         val startUrl = intent?.getStringExtra(EXTRA_START_URL)?.takeIf { it.isNotBlank() } ?: START_URL
+        val school = intent?.getStringExtra(EXTRA_UNIVERSITY_NAME)?.takeIf { it.isNotBlank() }
+        universityName = school
+        pageTitle = school ?: "教务系统"
 
         setContent {
             UniversityTimetableTheme {
                 LzuImportScreen(
                     title = pageTitle,
+                    universityName = universityName,
                     url = pageUrl,
                     loading = loading,
                     busy = busy,
@@ -316,21 +321,27 @@ class LzuImportActivity : ComponentActivity() {
         private const val JS_BRIDGE = "LzuBridge"
 
         /**
-         * 兰州大学教务入口。
+         * 默认入口（兰州大学教务的**手机版**框架页）。
          *
-         * 用 `academic/index_frame.jsp`（**手机版**）而不是 `http://my.lzu.edu.cn/`（个人工作台）：
-         * 工作台是桌面布局的门户，手机上要缩放拖拽才能点，且登录后还要自己找教务入口；
-         * index_frame 是教务系统的移动版框架页，进去就是「个人课表」等菜单。
+         * 全国其它高校由 [com.university.timetable.ui.screen.UniversityPickerActivity] 选校后
+         * 通过 [EXTRA_START_URL] 传入各自入口。
          */
         const val START_URL = "https://jwk.lzu.edu.cn/academic/index_frame.jsp"
 
         /** 直接用课表页打开时可通过该 extra 指定。 */
         const val EXTRA_START_URL = "start_url"
 
-        fun intent(context: Context, startUrl: String? = null): Intent =
-            Intent(context, LzuImportActivity::class.java).apply {
-                if (!startUrl.isNullOrBlank()) putExtra(EXTRA_START_URL, startUrl)
-            }
+        /** 校名，用于标题与提示条。 */
+        const val EXTRA_UNIVERSITY_NAME = "university_name"
+
+        fun intent(
+            context: Context,
+            startUrl: String? = null,
+            universityName: String? = null
+        ): Intent = Intent(context, LzuImportActivity::class.java).apply {
+            if (!startUrl.isNullOrBlank()) putExtra(EXTRA_START_URL, startUrl)
+            if (!universityName.isNullOrBlank()) putExtra(EXTRA_UNIVERSITY_NAME, universityName)
+        }
     }
 }
 
@@ -341,6 +352,7 @@ class LzuImportActivity : ComponentActivity() {
 @Composable
 private fun LzuImportScreen(
     title: String,
+    universityName: String?,
     url: String,
     loading: Boolean,
     busy: Boolean,
@@ -408,7 +420,8 @@ private fun LzuImportScreen(
                 )
             }
 
-            // 页面提示条
+            // 页面提示条：全国高校的教务系统各不相同，这里只说「要做的三步」，
+            // 不去假定菜单叫什么名字。
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -416,12 +429,20 @@ private fun LzuImportScreen(
                     .padding(horizontal = 14.dp, vertical = 8.dp)
             ) {
                 Text(
-                    text = "已为你打开教务系统的手机版界面，请先登录，再打开「个人课表」，" +
-                        "然后点击本软件的「导入课表」按钮。\n\n" +
-                        "顺序：① 登录教务系统 → ② 打开「个人课表」 → " +
-                        "③ 点击本软件右下角的「导入课表」。\n\n" +
-                        "注意：「个人课表」是教务系统网页里的菜单，" +
-                        "「导入课表」是本软件右下角的按钮，两者不是同一个东西。",
+                    text = buildString {
+                        append(
+                            if (universityName != null) {
+                                "已进入「$universityName」的教务系统。"
+                            } else {
+                                "已为你打开教务系统。"
+                            }
+                        )
+                        append("请先登录，再进入你的「课表 / 个人课表」页面，")
+                        append("然后点击本软件的「导入课表」按钮。\n\n")
+                        append("顺序：① 登录 → ② 打开课表页面 → ③ 点本软件右下角的「导入课表」。\n\n")
+                        append("注意：「课表页面」是教务网站里的菜单，")
+                        append("「导入课表」是本软件右下角的按钮，两者不是同一个东西。")
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )

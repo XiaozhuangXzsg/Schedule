@@ -55,7 +55,15 @@
             </intent-filter>
         </activity>
 
-        <!-- 在应用内打开兰州大学教务系统导入课表 -->
+        <!-- 全国高校目录：按首字母排序 + 搜索 + 兰大置顶 -->
+        <activity
+            android:name=".ui.screen.UniversityPickerActivity"
+            android:exported="false"
+            android:label="选择学校"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 在应用内打开所选高校的教务系统导入课表 -->
         <activity
             android:name=".ui.screen.LzuImportActivity"
             android:exported="false"
