@@ -12,9 +12,12 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.LocalContext
+import androidx.glance.action.ActionParameters
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
@@ -406,11 +409,7 @@ data class WidgetTheme(
     val title: GlanceColorProvider,
     val muted: GlanceColorProvider,
     val divider: GlanceColorProvider,
-    val todayBg: GlanceColorProvider,
-    /** 卡片顶部的凝光高光边（ColorOS 17 液态玻璃的「镜面反射」）。 */
-    val rimTop: GlanceColorProvider,
-    /** 卡片底部的厚度暗边（玻璃的「厚度感」）。 */
-    val rimBottom: GlanceColorProvider
+    val todayBg: GlanceColorProvider
 )
 /** 把一套 [com.university.timetable.ui.theme.TimetableScheme] 映射成卡片的 [WidgetTheme]。 */
 private fun widgetThemeOf(
@@ -431,17 +430,7 @@ private fun widgetThemeOf(
         title = FixedColorProvider(scheme.colorScheme.onSurface.toArgb()),
         muted = FixedColorProvider(scheme.extras.mutedText.toArgb()),
         divider = FixedColorProvider(scheme.extras.gridLine.toArgb()),
-        todayBg = FixedColorProvider(scheme.colorScheme.surfaceVariant.toArgb()),
-        // 液态玻璃的上下描边。深色卡片用白色高光最像玻璃；浅色卡片上白色高光会
-        // 融进白底看不见，所以浅色改用极淡的黑色边——观感上等价于一条「棱」。
-        rimTop = FixedColorProvider(
-            if (dark) withAlpha(0xFFFFFFFF.toInt(), 0.26f)
-            else withAlpha(0xFF000000.toInt(), 0.07f)
-        ),
-        rimBottom = FixedColorProvider(
-            if (dark) withAlpha(0xFF000000.toInt(), 0.30f)
-            else withAlpha(0xFF000000.toInt(), 0.05f)
-        )
+        todayBg = FixedColorProvider(scheme.colorScheme.surfaceVariant.toArgb())
     )
 }
 
@@ -451,9 +440,7 @@ private val FallbackWidgetTheme = WidgetTheme(
     title = ColorProvider(day = Color(0xFF16181D), night = Color(0xFFE7E7EC)),
     muted = ColorProvider(day = Color(0xFF8E909B), night = Color(0xFF9EA1AD)),
     divider = ColorProvider(day = Color(0xFFEAEBF2), night = Color(0xFF2A2C34)),
-    todayBg = ColorProvider(day = Color(0xFFF1F3FB), night = Color(0xFF20222A)),
-    rimTop = ColorProvider(day = Color(0x12000000), night = Color(0x42FFFFFF)),
-    rimBottom = ColorProvider(day = Color(0x0D000000), night = Color(0x4D000000))
+    todayBg = ColorProvider(day = Color(0xFFF1F3FB), night = Color(0xFF20222A))
 )
 
 @Composable
@@ -463,6 +450,26 @@ private fun openTodayIntent() = actionStartActivity(
         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
     }
 )
+
+/**
+ * 吞掉点击、但**什么都不做**。
+ *
+ * 卡片现在把可点击区域铺到「除课程格以外的全部区域」（外层容器整体挂
+ * [openTodayIntent]）。课程格显示的是课程名与地点，点它不该跳到软件；
+ * 可它是外层容器的子视图，不处理点击就会冒泡上去打开软件。
+ * RemoteViews 里没有「只吃掉点击」的修饰符，所以给课程格挂一个空动作的回调。
+ */
+class ConsumeTapAction : ActionCallback {
+    override suspend fun onAction(
+        context: Context,
+        glanceId: GlanceId,
+        parameters: ActionParameters
+    ) = Unit
+}
+
+/** 见 [ConsumeTapAction]：把这个区域标成「可点但无事发生」，从而挡住外层的跳转。 */
+@Composable
+private fun consumeTap() = actionRunCallback<ConsumeTapAction>()
 
 /**
  * 卡片右上角的手动刷新按钮。
@@ -516,15 +523,6 @@ private fun CompactContent(data: WidgetData) {
             .padding(12.dp)
             .clickable(openTodayIntent())
     ) {
-        // 顶部凝光高光边
-        Box(
-            modifier = GlanceModifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(theme.rimTop)
-                .cornerRadius(1.dp)
-        ) {}
-
         Spacer(GlanceModifier.height(4.dp))
 
         Row(
@@ -560,24 +558,31 @@ private fun CompactContent(data: WidgetData) {
                 style = TextStyle(fontSize = 13.sp, color = theme.muted)
             )
         } else {
-            Text(
-                text = primary.name,
-                style = TextStyle(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = theme.title
-                ),
-                maxLines = 1
-            )
-            Spacer(GlanceModifier.height(2.dp))
-            Text(
-                text = buildString {
-                    append(primary.time)
-                    if (primary.location.isNotBlank()) append(" · ${primary.location}")
-                },
-                style = TextStyle(fontSize = 11.sp, color = FixedColorProvider(primary.accentArgb)),
-                maxLines = 1
-            )
+            // 课程名与地点这一段**不**响应点击：点它不该跳进软件。
+            // 卡片其余区域（标题行、空白、分隔线、底部留白）都由外层 Column 打开软件。
+            Column(modifier = GlanceModifier.fillMaxWidth().clickable(consumeTap())) {
+                Text(
+                    text = primary.name,
+                    style = TextStyle(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = theme.title
+                    ),
+                    maxLines = 1
+                )
+                Spacer(GlanceModifier.height(2.dp))
+                Text(
+                    text = buildString {
+                        append(primary.time)
+                        if (primary.location.isNotBlank()) append(" · ${primary.location}")
+                    },
+                    style = TextStyle(
+                        fontSize = 11.sp,
+                        color = FixedColorProvider(primary.accentArgb)
+                    ),
+                    maxLines = 1
+                )
+            }
 
             // 正在上课时，补充显示紧随其后的那节
             val following = if (data.now != null) data.next else null
@@ -604,19 +609,11 @@ private fun CompactContent(data: WidgetData) {
                         fontSize = 12.sp,
                         color = theme.title
                     ),
-                    maxLines = 1
+                    maxLines = 1,
+                    modifier = GlanceModifier.clickable(consumeTap())
                 )
             }
         }
-
-        // 底部厚度暗边
-        Box(
-            modifier = GlanceModifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(theme.rimBottom)
-                .cornerRadius(1.dp)
-        ) {}
     }
 }
 
@@ -657,25 +654,15 @@ private fun FullContent(data: WidgetData) {
             .background(theme.cardBg)
             .cornerRadius(20.dp)
             .padding(12.dp)
+            .clickable(openTodayIntent())
     ) {
-        // 顶部凝光高光边（ColorOS 17 液态玻璃）
-        Box(
-            modifier = GlanceModifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(theme.rimTop)
-                .cornerRadius(1.dp)
-        ) {}
-
         Spacer(GlanceModifier.height(6.dp))
 
-        // 标题行：整张卡片上**唯一**能点开软件的区域。
-        // 课程栏要留给上下滑动，所以卡片本身不再整体可点——
-        // 否则想滑课表时很容易滑成「点开软件」。
+        // 可点击区域铺到整张卡片，**只有课程行不该点**（课程行自己挂空动作挡掉）。
+        // 课程栏要留给上下滑动：LazyColumn 是独立的 ListView，滑动时手势被它吃掉，
+        // 不会误触成「打开软件」。
         Row(
-            modifier = GlanceModifier
-                .fillMaxWidth()
-                .clickable(openTodayIntent()),
+            modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
             Text(
@@ -769,8 +756,20 @@ private fun FullContent(data: WidgetData) {
                         style = TextStyle(fontSize = 10.sp, color = theme.muted),
                         maxLines = 1
                     )
+                } else if (data.classes.size <= 2) {
+                    // 只有一两节课时用普通 Column，**不要**用 LazyColumn：
+                    // LazyColumn 编译成 ListView，会连同自己下方的空白背景一起吞掉点击，
+                    // 那一片就变成「点了没反应」。普通 Column 只占内容高度，
+                    // 剩下的空白仍属于外层 Column，也就是仍能点一下进软件。
+                    // 4×2 卡片的高度正好放得下两行，再多就必须靠 LazyColumn 滚动。
+                    Column(modifier = GlanceModifier.fillMaxWidth()) {
+                        data.classes.forEach { item ->
+                            ClassRow(item, theme)
+                            Spacer(GlanceModifier.height(4.dp))
+                        }
+                    }
                 } else {
-                    // 这里**必须**用 LazyColumn：Glance 里唯一能纵向滚动的容器就是它。
+                    // 三节以上必须用 LazyColumn：Glance 里唯一能纵向滚动的容器就是它。
                     // 课多的时候普通 Column 只会把后面的课挤出可视区，用户根本看不到；
                     // LazyColumn 则可以在卡片里上下滑动，把被挡住的课翻出来。
                     //
@@ -790,16 +789,6 @@ private fun FullContent(data: WidgetData) {
                 }
             }
         }
-
-        // 底部厚度暗边：顶亮底暗夹起来，玻璃才有「一块实体」的厚度感，
-        // 而不是一张半透明的贴纸。
-        Box(
-            modifier = GlanceModifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(theme.rimBottom)
-                .cornerRadius(1.dp)
-        ) {}
     }
 }
 
@@ -821,23 +810,14 @@ private fun TomorrowContent(tomorrow: WidgetTomorrow, theme: WidgetTheme) {
             .background(theme.cardBg)
             .cornerRadius(20.dp)
             .padding(12.dp)
+            .clickable(openTodayIntent())
     ) {
-        // 顶部凝光高光边
-        Box(
-            modifier = GlanceModifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(theme.rimTop)
-                .cornerRadius(1.dp)
-        ) {}
-
         Spacer(GlanceModifier.height(8.dp))
 
-        // 只有标题行能点开软件；下方的课程格保留自己的滑动交互。
+        // 可点击区域铺到整张卡片；**课程格自己挡掉点击**（见 TomorrowClassCell），
+        // 所以点课程名/地点不会跳进软件，其余任何地方都会。
         Row(
-            modifier = GlanceModifier
-                .fillMaxWidth()
-                .clickable(openTodayIntent()),
+            modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.Vertical.CenterVertically
         ) {
             Text(
@@ -911,15 +891,6 @@ private fun TomorrowContent(tomorrow: WidgetTomorrow, theme: WidgetTheme) {
                 modifier = GlanceModifier.fillMaxWidth().defaultWeight()
             )
         }
-
-        // 底部厚度暗边
-        Box(
-            modifier = GlanceModifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(theme.rimBottom)
-                .cornerRadius(1.dp)
-        ) {}
     }
 }
 
@@ -1043,6 +1014,8 @@ private fun TomorrowClassCell(
             .background(FixedColorProvider(tint))
             .cornerRadius(12.dp)
             .padding(end = 9.dp, top = 7.dp, bottom = 7.dp)
+            // 课程格显示课名与地点，点它不该跳进软件 —— 用空动作把点击挡在这里。
+            .clickable(consumeTap())
     ) {
         // 侧边彩条：与今日课程列表的色条一致，用课程本身的颜色（不调淡）
         Box(
@@ -1137,7 +1110,10 @@ private fun ClassRow(item: WidgetClass, theme: WidgetTheme) {
     val nameColor = if (item.isPast) theme.muted else theme.title
 
     Row(
-        modifier = GlanceModifier.fillMaxWidth(),
+        modifier = GlanceModifier
+            .fillMaxWidth()
+            // 课程行只显示课名与地点，点它不该跳进软件 —— 用空动作把点击挡在这里。
+            .clickable(consumeTap()),
         verticalAlignment = Alignment.Vertical.Top
     ) {
         Box(

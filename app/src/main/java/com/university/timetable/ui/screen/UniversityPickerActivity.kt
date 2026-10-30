@@ -202,7 +202,7 @@ private fun PickerHeader(total: Int, onBack: () -> Unit) {
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = "全国 $total 所高校 · 先选校，再在内置浏览器里导入",
+                text = "全国 $total 所本科高校 · 先选校，再在内置浏览器里导入",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -49,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.university.timetable.data.UniversityDirectory
 import com.university.timetable.importer.ImportResult
 import com.university.timetable.importer.OcrScheduleParser
 import com.university.timetable.importer.ScheduleCsvParser
@@ -198,6 +199,7 @@ fun ImportDialog(
             Spacer(Modifier.height(16.dp))
 
             // 应用内登录教务系统直接导入（全国高校，先选校）
+            val totalSchools = remember { UniversityDirectory.all(context).size }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -235,7 +237,7 @@ fun ImportDialog(
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
-                        text = "全国 347 所高校，选校后在内置浏览器里登录并导入",
+                        text = "全国 $totalSchools 所本科高校，选校后在内置浏览器里登录并导入",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )

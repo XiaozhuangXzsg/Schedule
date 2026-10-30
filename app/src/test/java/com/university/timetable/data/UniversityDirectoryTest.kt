@@ -18,7 +18,9 @@ class UniversityDirectoryTest {
     fun asset_exists_and_holds_all_schools() {
         assertTrue("资产文件缺失：${asset.absolutePath}", asset.isFile)
         val schools = UniversityDirectory.parse(asset.readText(Charsets.UTF_8))
-        assertEquals("高校数量", 347, schools.size)
+        // 只收「办学层次 = 本科」：专科 1540 所与未载明 425 所不收，
+        // 另有 54 所本科院校表里没有任何可用入口，也收不进来。
+        assertEquals("高校数量", 1358, schools.size)
     }
 
     @Test

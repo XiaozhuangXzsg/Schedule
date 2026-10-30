@@ -33,8 +33,8 @@ android {
         applicationId = "com.university.timetable"
         minSdk = 26
         targetSdk = 37
-        versionCode = 220
-        versionName = "2.2.0"
+        versionCode = 221
+        versionName = "2.2.1"
         vectorDrawables { useSupportLibrary = true }
         resourceConfigurations += listOf("zh", "en")
     }
