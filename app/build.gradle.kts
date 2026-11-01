@@ -35,12 +35,12 @@ val appVersionName: String =
         ?.trim()
         ?.removePrefix("v")
         ?.takeIf { it.isNotEmpty() }
-        ?: "1.0.0"
+        ?: "3.0.0"
 
 fun versionCodeOf(name: String): Int {
     val core = name.substringBefore('-').substringBefore('+')
     val parts = core.split('.')
-    require(parts.size == 3) { "版本名必须形如 1.2.3，当前为：$name" }
+    require(parts.size == 3) { "版本名必须形如 3.0.0，当前为：$name" }
     val numbers = parts.map { part ->
         part.toIntOrNull() ?: error("版本名中的 \"$part\" 不是整数：$name")
     }
@@ -52,8 +52,9 @@ val appVersionCode: Int =
     (project.findProperty("timetable.versionCode") as String?)?.trim()?.toIntOrNull()
         ?: versionCodeOf(appVersionName)
 
-require(appVersionCode > 221) {
-    "versionCode 必须大于历史上线过的 221（v2.2.1），否则已安装用户无法覆盖升级：$appVersionCode"
+require(appVersionCode > 10_000) {
+    "versionCode 必须大于历史最高发布过的 10000（v1.0.0 测试版），" +
+        "否则已安装用户无法覆盖升级：$appVersionCode"
 }
 
 // 更新渠道仓库：客户端只读 BuildConfig，代码里不再出现第二处仓库地址。

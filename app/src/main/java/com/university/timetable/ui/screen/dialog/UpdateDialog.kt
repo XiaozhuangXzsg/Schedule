@@ -89,7 +89,7 @@ fun UpdateDialog(
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
-                        text = "v" + UpdateConfig.CURRENT_VERSION_NAME + " → v" + release.versionName,
+                        text = UpdateConfig.CURRENT_VERSION_LABEL + " → v" + release.versionName,
                         style = MaterialTheme.typography.labelMedium,
                         color = colors.mutedText
                     )

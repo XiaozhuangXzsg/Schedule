@@ -543,7 +543,7 @@ fun SettingsScreen(
                     subtitle = if (updateChecking) {
                         "正在检查…"
                     } else {
-                        "当前版本 v${com.university.timetable.BuildConfig.VERSION_NAME}"
+                        "当前版本 ${UpdateConfig.CURRENT_VERSION_LABEL}"
                     },
                     onClick = { if (!updateChecking) onCheckUpdate() }
                 )
@@ -592,7 +592,7 @@ fun SettingsScreen(
             SettingsGroup(title = "关于") {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "娅娅课表 v${com.university.timetable.BuildConfig.VERSION_NAME}",
+                        text = "娅娅课表 ${UpdateConfig.CURRENT_VERSION_LABEL}",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface
@@ -762,7 +762,7 @@ fun SettingsScreen(
                         .verticalScroll(rememberScrollState())
                 ) {
                     Text(
-                        text = "v${com.university.timetable.BuildConfig.VERSION_NAME}",
+                        text = UpdateConfig.CURRENT_VERSION_LABEL,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Medium
                     )

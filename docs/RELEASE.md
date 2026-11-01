@@ -7,9 +7,9 @@
 
 | 项目 | 位置 | 说明 |
 | --- | --- | --- |
-| versionName | `gradle.properties` → `timetable.versionName` | 形如 `1.0.0`，每段 0–99 |
-| versionCode | 构建脚本自动推导 | `major*10000 + minor*100 + patch`，1.0.0 → 10000 |
-| Release Tag | GitHub | 必须写成 `v1.0.0`，与 versionName 完全一致 |
+| versionName | `gradle.properties` → `timetable.versionName` | 形如 `3.0.0`，每段 0–99（3.x 起为正式版） |
+| versionCode | 构建脚本自动推导 | `major*10000 + minor*100 + patch`，3.0.0 → 30000 |
+| Release Tag | GitHub | 必须写成 `v3.0.0`，与 versionName 完全一致 |
 | applicationId | `app/build.gradle.kts` | **永远不要改**，否则系统视为另一个应用，无法覆盖安装 |
 
 发版时：
@@ -100,7 +100,7 @@ keytool -genkeypair -v \
 - 读取 `https://api.github.com/repos/<owner>/<repo>/releases?per_page=30`；
 - 过滤 draft / prerelease，要求 Tag 可解析为 `x.y.z` 且带 https 的 `.apk`；
 - **要求 Release 同时附带 `version.json`**（工作流自动上传）。没有该文件的 Release 一律不参与比较：
-  1.0.0 之前的历史发布用的是旧版本号算法（v2.2.1 = 221），按新算法 Tag 会算成 20201，
+  3.0.0 之前的历史发布用的是旧版本号算法（v2.2.1 = 221），按新算法 Tag 会算成 20201，
   若允许从 Tag 推导版本号，这些旧包会永远排在新版本前面并诱导用户下载更旧的 APK；
 - 用 **versionCode** 比较，取大于当前版本的最大者；
 - 优先读取 Release 附件 `version.json` 里的 SHA-256；没有时回退到 GitHub 资产的 `digest` 字段；
@@ -130,7 +130,7 @@ git push origin v1.0.1
 
 手工验证步骤（模拟器或真机）：
 
-1. 安装旧版本（例如 v1.0.0），录入若干课程、待办、收藏、修改主题，记下数量；
+1. 安装旧版本（例如 v2.2.1 或更早的 3.x），录入若干课程、待办、收藏、修改主题，记下数量；
 2. 用旧版本安装新版本同签名 APK：`adb install -r yaya-timetable-v1.0.1.apk`
    （**不要**先 `adb uninstall`，也不要加降级参数）；
 3. 打开应用，逐项核对：课程、上课时段、待办、AI 对话、主题/背景、昵称头像、提醒设置；

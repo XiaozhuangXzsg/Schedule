@@ -27,6 +27,15 @@ object UpdateConfig {
     val CURRENT_VERSION_CODE: Long get() = BuildConfig.VERSION_CODE.toLong()
     val CURRENT_VERSION_NAME: String get() = BuildConfig.VERSION_NAME
 
+    /**
+     * 正式版标识。3.0.0 起娅娅课表改用「3.0.0 正式版」这套版本号，
+     * 界面上凡是显示版本号的地方都带上它，避免和 2.x 的四位版本号混淆。
+     */
+    const val RELEASE_CHANNEL = "正式版"
+
+    /** 界面上展示的完整版本号，例如「v3.0.0 正式版」。 */
+    val CURRENT_VERSION_LABEL: String get() = "v$CURRENT_VERSION_NAME $RELEASE_CHANNEL"
+
     /** 默认每天最多自动检查一次。 */
     const val AUTO_CHECK_INTERVAL_MS = 24L * 60 * 60 * 1000
 
@@ -55,7 +64,8 @@ object UpdateConfig {
      * 一旦检查到新版本，会改用 Release 里的更新说明。
      */
     val BUILTIN_NOTES: String = """
-        v1.0.0 正式版
+        v3.0.0 正式版
+        • 版本号进入 3.x：界面上的版本号统一带「正式版」标识
         • 支持在应用内检查、下载并覆盖安装新版本，无需卸载旧版
         • 更新过程不会清除课程、设置、待办、收藏与聊天记录
         • 新增「导出数据备份 / 导入数据恢复」，可保存到系统文件选择器指定的位置

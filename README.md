@@ -3,7 +3,9 @@
 一款面向大学生的 Android 课表应用。使用 **Kotlin + Jetpack Compose** 打造，
 深度适配 **一加 15 / ColorOS 16（水生设计语言）**，并免费开放同类应用（如 WakeUp 课程表）的付费高级能力。
 
-> **v1.0.0** — 首个正式版：**应用内更新** + **数据备份/恢复** + **GitHub Actions 自动发布**
+> **v3.0.0 正式版** — 首个正式版：**应用内更新** + **数据备份/恢复** + **GitHub Actions 自动发布**
+> 版本号从 2.2.1 直接进入 **3.x**（`versionCode 30000`），界面上的版本号统一带「正式版」标识，
+> 避免和 2.x 的四位版本号混淆：
 > ① **应用内更新**：以 GitHub Releases 为唯一渠道（`XiaozhuangXzsg/Schedule`，仓库地址集中在
 > `gradle.properties` 的 `timetable.github.owner/repo` → `BuildConfig` → `UpdateConfig.REPO_URL`，
 > 全项目只有这一处来源）。启动后延迟 2.5s 后台检查，正常情况**每 24 小时最多一次**；
@@ -32,7 +34,7 @@
 > 生成 `version.json` 并自动建 Release 上传（APK + `.sha256` + `version.json`）。
 > ⑦ **修死链**：设置页与关于页里写错的 `https://github.com/XiaozhuangXzsg/-Schedule`
 > （多一个 `-`）改成 `UpdateConfig.REPO_URL`。
-> ⑧ 构建 **225 用例 / 0 失败**，`versionCode = 10000`。
+> ⑧ 构建 **225 用例 / 0 失败**，`versionCode = 30000`。
 >
 > **v2.2.1** — 桌面小组件去掉上下长横线并重划可点击区域 + 高校目录按新表补到 1358 所本科：
 > ① **小组件**：删掉 `WidgetTheme` 的 `rimTop` / `rimBottom` 与 6 处画横线的 `Box`
