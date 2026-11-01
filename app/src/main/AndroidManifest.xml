@@ -23,6 +23,13 @@
     <!-- 日历页：只读取本机系统日历，绝不写入 -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
 
+    <!--
+        应用内更新：下载完成的 APK 通过系统安装器做「覆盖安装」。
+        该权限只用来把用户引导到系统的「安装未知应用」授权页，安装动作始终
+        由系统 UI 完成，应用无法绕过。Android 8.0 以下无需声明（也无人可禁）。
+    -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <application
         android:name=".TimetableApp"
         android:allowBackup="true"
@@ -122,6 +129,20 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_week_info" />
         </receiver>
+
+        <!--
+            应用内更新：把下载到 files/updates/ 的 APK 以 content:// 形式交给系统安装器，
+            不再申请任何存储权限。authorities 必须与 UpdateInstaller 里拼出来的完全一致。
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <!-- 开机后重建周期任务 -->
         <receiver

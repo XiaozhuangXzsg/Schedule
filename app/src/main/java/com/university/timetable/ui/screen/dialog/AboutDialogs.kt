@@ -47,8 +47,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.university.timetable.ui.theme.LocalTimetableColors
 
-/** 首次启动展示一次的软件说明中，可点击的 GitHub 地址。 */
-private const val GITHUB_URL = "https://github.com/XiaozhuangXzsg/-Schedule"
+/** 首次启动展示一次的软件说明中，可点击的 GitHub 地址（与更新渠道共用同一份配置）。 */
+private val GITHUB_URL: String get() = com.university.timetable.update.UpdateConfig.REPO_URL
 
 /** 联系方式（关于页面 / 联系我们弹窗共用）。 */
 internal const val CONTACT_EMAIL = "zhuangzhongao@gmail.com"

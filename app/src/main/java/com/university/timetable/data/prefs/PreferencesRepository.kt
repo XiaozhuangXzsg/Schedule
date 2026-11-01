@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -167,7 +168,15 @@ data class UiPreferences(
      * 开启后轻点开关、切换标签页、长按课程等操作会触发极轻的系统 tick。
      * 系统层面「触感反馈」总开关关闭时，这些调用会自动失效。
      */
-    val hapticFeedback: Boolean = true
+    val hapticFeedback: Boolean = true,
+    /** 是否允许启动时自动检查更新（每天最多一次） */
+    val autoCheckUpdates: Boolean = true,
+    /** 上次检查更新的时间戳（毫秒），0 表示从未检查 */
+    val lastUpdateCheckAt: Long = 0L,
+    /** 用户点了「稍后再说」的版本号，0 表示没有 */
+    val postponedVersionCode: Int = 0,
+    /** 用户点「稍后再说」的时间戳（毫秒） */
+    val postponedAt: Long = 0L
 ) {
     companion object {
         const val UNSET = -1
@@ -240,6 +249,10 @@ class PreferencesRepository(private val context: Context) {
         val tutorialSeen = booleanPreferencesKey("tutorial_seen")
         val widgetBgAlpha = floatPreferencesKey("widget_bg_alpha")
         val hapticFeedback = booleanPreferencesKey("haptic_feedback")
+        val autoCheckUpdates = booleanPreferencesKey("auto_check_updates")
+        val lastUpdateCheckAt = longPreferencesKey("last_update_check_at")
+        val postponedVersionCode = intPreferencesKey("postponed_version_code")
+        val postponedAt = longPreferencesKey("postponed_at")
     }
 
     val preferences: Flow<UiPreferences> = context.dataStore.data.map { p ->
@@ -284,7 +297,11 @@ class PreferencesRepository(private val context: Context) {
             tutorialSeen = p[Keys.tutorialSeen] ?: false,
             widgetBgAlpha = (p[Keys.widgetBgAlpha] ?: 1f)
                 .coerceIn(UiPreferences.MIN_WIDGET_BG_ALPHA, 1f),
-            hapticFeedback = p[Keys.hapticFeedback] ?: true
+            hapticFeedback = p[Keys.hapticFeedback] ?: true,
+            autoCheckUpdates = p[Keys.autoCheckUpdates] ?: true,
+            lastUpdateCheckAt = p[Keys.lastUpdateCheckAt] ?: 0L,
+            postponedVersionCode = p[Keys.postponedVersionCode] ?: 0,
+            postponedAt = p[Keys.postponedAt] ?: 0L
         )
     }
 
@@ -398,6 +415,16 @@ class PreferencesRepository(private val context: Context) {
         edit { it[Keys.bgBlur] = blur.coerceIn(0f, 40f) }
 
     suspend fun setSeeded(value: Boolean) = edit { it[Keys.seeded] = value }
+
+    suspend fun setAutoCheckUpdates(value: Boolean) = edit { it[Keys.autoCheckUpdates] = value }
+
+    suspend fun setLastUpdateCheckAt(timestamp: Long) = edit { it[Keys.lastUpdateCheckAt] = timestamp }
+
+    /** 记录「稍后再说」的版本与时间，用于控制提醒间隔。 */
+    suspend fun setPostponed(versionCode: Int, timestamp: Long) = edit { prefs ->
+        prefs[Keys.postponedVersionCode] = versionCode
+        prefs[Keys.postponedAt] = timestamp
+    }
 
     /** 读取上次已提醒的课程标识，避免同一节课重复提醒。 */
     suspend fun lastRemindedKey(): String =

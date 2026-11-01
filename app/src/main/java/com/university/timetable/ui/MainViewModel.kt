@@ -792,6 +792,8 @@ class MainViewModel(
 
     fun setBackgroundImageBlur(b: Float) = viewModelScope.launch { prefsRepo.setBackgroundImageBlur(b) }
 
+    fun setAutoCheckUpdates(v: Boolean) = viewModelScope.launch { prefsRepo.setAutoCheckUpdates(v) }
+
     // ---------------- 流体云 / 提醒 ----------------
 
     fun refreshFluidCloud() {

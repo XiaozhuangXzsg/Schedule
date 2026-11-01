@@ -81,10 +81,24 @@ import com.university.timetable.ui.theme.ThemePresets
 import com.university.timetable.ui.tutorial.TutorialAnchors
 import com.university.timetable.ui.tutorial.TutorialSettingsRow
 import com.university.timetable.ui.tutorial.tutorialAnchor
+import com.university.timetable.backup.AppRestarter
+import com.university.timetable.backup.DataBackup
+import com.university.timetable.ui.screen.dialog.RestoreConfirmDialog
+import com.university.timetable.update.UpdateConfig
 import com.university.timetable.util.ImageLoader
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.SystemUpdateAlt
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-private const val ABOUT_GITHUB_URL = "https://github.com/XiaozhuangXzsg/-Schedule"
 private const val ABOUT_EMAIL = "zhuangzhongao@gmail.com"
 private const val ABOUT_BILIBILI = "一只小庄呀"
 
@@ -99,7 +113,9 @@ fun SettingsScreen(
     onOpenBackground: () -> Unit,
     onOpenAi: () -> Unit = {},
     onPlayEgg: () -> Unit = {},
-    onOpenTutorial: () -> Unit = {}
+    onOpenTutorial: () -> Unit = {},
+    onCheckUpdate: () -> Unit = {},
+    updateChecking: Boolean = false
 ) {
     val colors = LocalTimetableColors.current
     val dark = LocalIsDark.current
@@ -120,6 +136,46 @@ fun SettingsScreen(
             )
         }
         viewModel.setAvatarUri(uri.toString())
+    }
+
+    // ---------------- 数据备份 / 恢复 ----------------
+    // 导出走 SAF 的 CreateDocument，用户自己选保存位置（下载目录、网盘等），不落在应用缓存里。
+    val backupScope = rememberCoroutineScope()
+    var backupBusy by remember { mutableStateOf(false) }
+    var backupMessage by remember { mutableStateOf<String?>(null) }
+    var restorePending by remember { mutableStateOf(false) }
+    var pendingRestoreUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var showChangelog by remember { mutableStateOf(false) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        backupBusy = true
+        backupScope.launch {
+            val result = DataBackup.export(context, uri)
+            backupBusy = false
+            backupMessage = result.message
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        // 先让用户确认，再真正覆盖本地数据。
+        pendingRestoreUri = uri
+    }
+
+    // 恢复后必须重启进程：Room 与 DataStore 才会重新打开恢复后的文件，避免内存里的旧状态回写。
+    // 系统不允许应用在后台把自己拉到前台（Android 14+ 的后台启动限制），
+    // 所以恢复后只能退出；另发一条「数据已恢复」的通知做兜底，用户在通知栏里点一下也能回来。
+    LaunchedEffect(restorePending) {
+        if (restorePending) {
+            delay(1600)
+            AppRestarter.restartLater(context)
+            AppRestarter.killNow()
+        }
     }
 
     if (editingNickname) {
@@ -478,6 +534,59 @@ fun SettingsScreen(
             Spacer(Modifier.height(14.dp))
         }
 
+        // 软件更新
+        item {
+            SettingsGroup(title = "软件更新") {
+                SettingsRow(
+                    icon = Icons.Filled.SystemUpdateAlt,
+                    title = "检查更新",
+                    subtitle = if (updateChecking) {
+                        "正在检查…"
+                    } else {
+                        "当前版本 v${com.university.timetable.BuildConfig.VERSION_NAME}"
+                    },
+                    onClick = { if (!updateChecking) onCheckUpdate() }
+                )
+                SettingSwitch("自动检查更新", prefs.autoCheckUpdates) {
+                    viewModel.setAutoCheckUpdates(it)
+                }
+                SettingsRow(
+                    icon = Icons.Filled.History,
+                    title = "更新日志",
+                    subtitle = "查看本版本更新内容",
+                    onClick = { showChangelog = true }
+                )
+            }
+            Spacer(Modifier.height(14.dp))
+        }
+
+        // 数据与备份
+        item {
+            SettingsGroup(title = "数据与备份") {
+                SettingsRow(
+                    icon = Icons.Filled.CloudUpload,
+                    title = "导出数据备份",
+                    subtitle = if (backupBusy) "正在导出…" else "课表、待办、对话、设置与 AI 配置",
+                    onClick = {
+                        if (!backupBusy) exportLauncher.launch(DataBackup.suggestedFileName())
+                    }
+                )
+                SettingsRow(
+                    icon = Icons.Filled.CloudDownload,
+                    title = "导入数据恢复",
+                    subtitle = "从之前导出的 .zip 备份恢复",
+                    onClick = {
+                        if (!backupBusy) {
+                            importLauncher.launch(
+                                arrayOf("application/zip", "application/octet-stream")
+                            )
+                        }
+                    }
+                )
+            }
+            Spacer(Modifier.height(14.dp))
+        }
+
         // 关于
         item {
             SettingsGroup(title = "关于") {
@@ -505,7 +614,7 @@ fun SettingsScreen(
                             .clip(RoundedCornerShape(12.dp))
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
                             .clickable {
-                                runCatching { uriHandler.openUri(ABOUT_GITHUB_URL) }
+                                runCatching { uriHandler.openUri(UpdateConfig.REPO_URL) }
                             }
                             .padding(horizontal = 12.dp, vertical = 10.dp)
                     ) {
@@ -524,7 +633,7 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = ABOUT_GITHUB_URL,
+                                text = UpdateConfig.REPO_URL,
                                 fontSize = 10.sp,
                                 color = colors.mutedText
                             )
@@ -595,6 +704,84 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { confirmClearAll = false }) { Text("取消") }
+            }
+        )
+    }
+
+    // ---------------- 导入备份：确认后在后台执行 ----------------
+    val pendingUri = pendingRestoreUri
+    if (pendingUri != null) {
+        RestoreConfirmDialog(
+            onConfirm = {
+                pendingRestoreUri = null
+                backupBusy = true
+                backupScope.launch {
+                    val result = DataBackup.restore(context, pendingUri)
+                    backupBusy = false
+                    backupMessage = result.message
+                    if (result.ok) restorePending = true
+                }
+            },
+            onDismiss = { pendingRestoreUri = null }
+        )
+    }
+
+    if (backupBusy) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("正在处理数据") },
+            text = { Text("请保持应用在前台，不要退出。") },
+            confirmButton = { }
+        )
+    }
+
+    if (backupMessage != null) {
+        AlertDialog(
+            onDismissRequest = { backupMessage = null },
+            title = { Text(if (restorePending) "恢复完成" else "备份") },
+            text = {
+                Text(
+                    text = backupMessage.orEmpty() +
+                        if (restorePending) "\n\n应用将自动重启以加载恢复后的数据；若没有自动打开，请手动启动应用。" else ""
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { backupMessage = null }) { Text("知道了") }
+            }
+        )
+    }
+
+    if (showChangelog) {
+        AlertDialog(
+            onDismissRequest = { showChangelog = false },
+            title = { Text("更新日志") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .heightIn(max = 320.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = "v${com.university.timetable.BuildConfig.VERSION_NAME}",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = UpdateConfig.BUILTIN_NOTES,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colors.mutedText
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showChangelog = false }) { Text("知道了") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showChangelog = false
+                    runCatching { uriHandler.openUri(UpdateConfig.RELEASES_URL) }
+                }) { Text("GitHub 发布页") }
             }
         )
     }

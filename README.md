@@ -3,6 +3,37 @@
 一款面向大学生的 Android 课表应用。使用 **Kotlin + Jetpack Compose** 打造，
 深度适配 **一加 15 / ColorOS 16（水生设计语言）**，并免费开放同类应用（如 WakeUp 课程表）的付费高级能力。
 
+> **v1.0.0** — 首个正式版：**应用内更新** + **数据备份/恢复** + **GitHub Actions 自动发布**
+> ① **应用内更新**：以 GitHub Releases 为唯一渠道（`XiaozhuangXzsg/Schedule`，仓库地址集中在
+> `gradle.properties` 的 `timetable.github.owner/repo` → `BuildConfig` → `UpdateConfig.REPO_URL`，
+> 全项目只有这一处来源）。启动后延迟 2.5s 后台检查，正常情况**每 24 小时最多一次**；
+> 设置页新增「软件更新」组（检查更新 / 当前版本号 / 自动检查开关 / 更新日志 / GitHub 发布页）。
+> 是否新版本一律用 **versionCode**（不是版本名）判断，忽略 draft 与 prerelease。
+> ② **安全校验**：下载后先实算 SHA-256 与发布元数据比对，再读 APK 归档里的包名与 versionCode，
+> 还要求签名与已安装版一致、且 versionCode 严格大于当前版本（阻止降级）。
+> 只有同时带 `version.json` 元数据的 Release 才算候选——1.0.0 之前用的是另一套 versionCode 算法
+> （v2.2.1 = 221），老包没有元数据，否则会永远排在前面诱导下载 58MB 再校验失败。
+> ③ **无损更新**：`applicationId` 保持 `com.university.timetable`、沿用原签名密钥（证书 SHA-256
+> `938d9f3f…4de9f5`）、versionCode 单调递增，**全程不卸载、不清数据**；Room 把
+> `fallbackToDestructiveMigration()` 收窄成 `fallbackToDestructiveMigrationFrom(true, 1, 2, 3)`
+> ——只有没有迁移路径的 v1–v3 才允许重建，v4→v5 走正常迁移，升级前还会把老库另存到
+> `files/backup/legacy-vN-<ts>.db`。
+> ④ **数据备份 / 恢复**：设置页「数据与备份」可**导出 .zip 到用户自选位置**（SAF `CreateDocument`，
+> 不落缓存），内含 `manifest.json` + 数据库（含 `-wal`/`-shm`，导出前 `wal_checkpoint(TRUNCATE)`）
+> + 两个 DataStore 的 `preferences_pb`。恢复前自动把当前数据另存到 `files/backup/pre-restore-*.zip`
+> （只留最近 3 份），校验包名 / 数据库版本 / SQLite 头 / `user_version`，拒绝来自更高版本或
+> 无法无损迁移的备份；写盘用临时文件 + 原子改名。
+> ⑤ **恢复后要重启进程**：Room 与 DataStore 都持有文件句柄，只能退出重进。真机实测 Android 14+
+> 的后台启动限制让「自己把自己拉回前台」彻底不可行（`startActivity`、`AlarmManager` 的 PendingIntent
+> 都被 `Background activity launch blocked` 拦下，精确闹钟还要 `SCHEDULE_EXACT_ALARM`），
+> 所以恢复完成后应用自动关闭，另发一条「数据已恢复」通知做兜底（ColorOS 会拦截低优先级通知）。
+> ⑥ **CI**：`.github/workflows/build.yml` 跑单测 + 打 debug 包；`release.yml` 在推送
+> `vX.Y.Z` Tag 时用 Secret 里的正式签名密钥构建、校验包名/版本号/签名、算 SHA-256、
+> 生成 `version.json` 并自动建 Release 上传（APK + `.sha256` + `version.json`）。
+> ⑦ **修死链**：设置页与关于页里写错的 `https://github.com/XiaozhuangXzsg/-Schedule`
+> （多一个 `-`）改成 `UpdateConfig.REPO_URL`。
+> ⑧ 构建 **225 用例 / 0 失败**，`versionCode = 10000`。
+>
 > **v2.2.1** — 桌面小组件去掉上下长横线并重划可点击区域 + 高校目录按新表补到 1358 所本科：
 > ① **小组件**：删掉 `WidgetTheme` 的 `rimTop` / `rimBottom` 与 6 处画横线的 `Box`
 > （CompactContent / FullContent / TomorrowContent 各上下一条），卡片只剩底色与圆角。
@@ -499,7 +530,7 @@
 > ④ 左右滑动切换周次时**左侧时间轴固定不动**，只有右侧日期栏与课程网格水平滑动，时间轴与网格仍共用同一份行高与分隔线；
 > ⑤ 修复 **AI 助手键盘遮挡输入栏**：输入框获得焦点、键盘弹出时整列向上收缩（`imePadding`），输入栏与底部按钮始终完整可见可点；收起键盘后自动回到原位，不跳动。
 > **v1.8.3** — 第三轮真机反馈的功能补充与修复：
-> ① 设置「关于」页重写：标注作者（兰大数学院 zza）与联系方式（邮箱 / B 站），说明软件开源，并提供**可点击的 GitHub 链接** `https://github.com/XiaozhuangXzsg/-Schedule`；
+> ① 设置「关于」页重写：标注作者（兰大数学院 zza）与联系方式（邮箱 / B 站），说明软件开源，并提供**可点击的 GitHub 链接**（仓库地址统一取自 `gradle.properties` 的 `timetable.github.owner/repo`，当前为 `https://github.com/XiaozhuangXzsg/Schedule`）；
 > ② 状态栏文字与图标颜色**跟随深浅色模式**（`isAppearanceLightStatusBars` / `isAppearanceLightNavigationBars`），两种模式下都清晰；
 > ③ 在应用内新增/删除/修改今日待办后，**桌面卡片立即刷新**（四处待办写入口统一调用 Glance `updateAll`）；
 > ④ 修复今日页顶栏**灰色左右箭头**：此前标题读的是"今天所在的自然周"，点箭头只改了选中周却不刷新标题，表现为"按钮无效"；现在标题与箭头都读 `selectedWeek`，可以正常切周；

@@ -50,9 +50,16 @@ class MainActivity : ComponentActivity() {
         AiViewModel.factory(applicationContext)
     }
 
+    /** 应用内更新：AndroidViewModel，默认工厂即可，无需自定义。 */
+    private val updateViewModel: com.university.timetable.update.UpdateViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+        // 用户从「数据已恢复」的通知或图标回到应用，这条通知就没必要留着了。
+        androidx.core.app.NotificationManagerCompat.from(this)
+            .cancel(com.university.timetable.backup.AppRestarter.NOTIFICATION_ID)
 
         val openToday = intent?.action == ACTION_OPEN_TODAY
 
@@ -98,6 +105,7 @@ class MainActivity : ComponentActivity() {
                     TimetableAppRoot(
                         viewModel = viewModel,
                         aiViewModel = aiViewModel,
+                        updateViewModel = updateViewModel,
                         darkTheme = dark,
                         startOnToday = openToday
                     )

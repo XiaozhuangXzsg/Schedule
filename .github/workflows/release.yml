@@ -1,0 +1,236 @@
+name: Release APK
+
+# 推送 vX.Y.Z 形式的 Tag 时自动构建正式版 APK 并创建 GitHub Release。
+#   git tag v1.0.1 && git push origin v1.0.1
+#
+# 需要的仓库 Secrets（Settings → Secrets and variables → Actions）：
+#   KEYSTORE_BASE64    正式签名密钥库的 Base64（base64 -w0 release.jks）
+#   KEYSTORE_PASSWORD  密钥库口令
+#   KEY_ALIAS          签名别名
+#   KEY_PASSWORD       签名别名口令
+# 详细步骤见 docs/RELEASE.md。
+
+on:
+  push:
+    # GitHub 的 tag 过滤是 glob（不支持 + 量词），这里先粗筛，
+    # 精确的 vX.Y.Z 校验交给下面 "Resolve version from tag" 步骤。
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Resolve version from tag
+        id: version
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          if [[ ! "$TAG" =~ ^v([0-9]{1,2})\.([0-9]{1,2})\.([0-9]{1,2})$ ]]; then
+            echo "::error::Tag '$TAG' 不符合 v<major>.<minor>.<patch>（每段 0-99）"
+            exit 1
+          fi
+          MAJOR=${BASH_REMATCH[1]}
+          MINOR=${BASH_REMATCH[2]}
+          PATCH=${BASH_REMATCH[3]}
+          VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+
+          # Tag、gradle.properties、gradle 推导出的 versionCode 必须完全一致，
+          # 否则「客户端看到的最新版本」和「实际产物」会漂移。
+          PROP_VERSION="$(grep -E '^timetable\.versionName=' gradle.properties | head -1 | cut -d= -f2 | tr -d '[:space:]')"
+          if [[ "$PROP_VERSION" != "$VERSION" ]]; then
+            echo "::error::gradle.properties 中 timetable.versionName=$PROP_VERSION，与 Tag v$VERSION 不一致"
+            exit 1
+          fi
+
+          # 必须比上一个 Tag 的 versionCode 大，否则系统会拒绝覆盖安装。
+          PREV_TAG="$(git describe --tags --abbrev=0 --match 'v[0-9]*' "${TAG}^" 2>/dev/null || true)"
+          if [[ -n "$PREV_TAG" ]]; then
+            PREV_CORE="${PREV_TAG#v}"
+            IFS=. read -r P_MAJOR P_MINOR P_PATCH <<< "$PREV_CORE"
+            if [[ "$P_MAJOR" =~ ^[0-9]+$ && "$P_MINOR" =~ ^[0-9]+$ && "$P_PATCH" =~ ^[0-9]+$ ]]; then
+              PREV_CODE=$((10#$P_MAJOR * 10000 + 10#$P_MINOR * 100 + 10#$P_PATCH))
+              if (( CODE <= PREV_CODE )); then
+                echo "::error::versionCode $CODE 不大于上一版 $PREV_TAG 的 $PREV_CODE"
+                exit 1
+              fi
+            fi
+          fi
+
+          echo "name=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "已确认版本：v$VERSION（versionCode=$CODE）"
+
+      - name: Restore release signing key
+        run: |
+          set -euo pipefail
+          if [[ -z "${KEYSTORE_BASE64:-}" ]]; then
+            echo "::error::缺少 KEYSTORE_BASE64 Secret。正式版必须用固定签名密钥签名，否则已安装用户无法覆盖升级（见 docs/RELEASE.md）。"
+            exit 1
+          fi
+          for name in KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "::error::缺少 Secret：$name（见 docs/RELEASE.md）"
+              exit 1
+            fi
+          done
+          mkdir -p keystore
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > keystore/release.jks
+          test -s keystore/release.jks
+          {
+            echo "storeFile=keystore/release.jks"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > keystore.properties
+          # 指纹是公开信息，打印出来便于核对本次发布确实由正式密钥签名。
+          keytool -list -v -keystore keystore/release.jks -alias "$KEY_ALIAS" \
+            -storepass "$KEYSTORE_PASSWORD" | grep -E 'SHA256:|Alias name:' | head -4
+
+      - name: Unit tests
+        run: ./gradlew :app:testDebugUnitTest --console=plain
+
+      - name: Build release APK
+        run: |
+          ./gradlew :app:assembleRelease \
+            -Ptimetable.versionName=${{ steps.version.outputs.name }} \
+            -Ptimetable.versionCode=${{ steps.version.outputs.code }} \
+            --console=plain
+
+      - name: Name APK and verify package info
+        id: artifacts
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.name }}"
+          CODE="${{ steps.version.outputs.code }}"
+          SRC="$(find app/build/outputs/apk/release -name '*.apk' -type f | head -1)"
+          if [[ -z "$SRC" ]]; then
+            echo "::error::没有找到构建出的 APK"
+            exit 1
+          fi
+          APK="yaya-timetable-v${VERSION}.apk"
+          cp "$SRC" "$APK"
+
+          SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          AAPT2="$(ls "$SDK_DIR"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -1 || true)"
+          if [[ -z "$AAPT2" ]]; then
+            echo "::error::找不到 aapt2，无法校验 APK 包名与版本号，发布中止"
+            exit 1
+          fi
+          BADGING="$("$AAPT2" dump badging "$APK" | head -1)"
+          echo "$BADGING"
+          echo "$BADGING" | grep -q "package: name='com.university.timetable' versionCode='$CODE' versionName='$VERSION'" \
+            || { echo "::error::APK 的包名/versionCode/versionName 与预期不一致"; exit 1; }
+
+          APKSIGNER="$(ls "$SDK_DIR"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1 || true)"
+          if [[ -z "$APKSIGNER" ]]; then
+            echo "::error::找不到 apksigner，无法校验签名，发布中止"
+            exit 1
+          fi
+          "$APKSIGNER" verify --print-certs "$APK" | head -5
+          "$APKSIGNER" verify "$APK"
+
+          SHA="$(sha256sum "$APK" | cut -d' ' -f1)"
+          echo "$SHA  $APK" > "$APK.sha256"
+          echo "apk=$APK" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "SHA-256=$SHA"
+
+      - name: Generate version metadata
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, re, pathlib
+
+          tag = os.environ["TAG"]
+          version = os.environ["VERSION"]
+          code = int(os.environ["CODE"])
+          apk = pathlib.Path(os.environ["APK"])
+
+          sha = hashlib.sha256(apk.read_bytes()).hexdigest()
+          expected = os.environ.get("SHA", "")
+          if expected and expected.lower() != sha.lower():
+            raise SystemExit("SHA-256 与上一步不一致，发布中止")
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          url = f"https://github.com/{repo}/releases/download/{tag}/{apk.name}"
+
+          notes = ""
+          changelog = pathlib.Path("docs/CHANGELOG.md")
+          if changelog.exists():
+              text = changelog.read_text(encoding="utf-8")
+              pattern = re.compile(
+                  r"^##\s*\[" + re.escape(version) + r"\][^\n]*\n(.*?)(?=^##\s|\Z)",
+                  re.MULTILINE | re.DOTALL,
+              )
+              match = pattern.search(text)
+              if match:
+                  notes = match.group(1).strip()
+          if not notes:
+              notes = f"娅娅课表 v{version} 正式版。"
+
+          pathlib.Path("release-notes.md").write_text(
+              notes + "\n", encoding="utf-8"
+          )
+          meta = {
+              "versionCode": code,
+              "versionName": version,
+              "tagName": tag,
+              "apkName": apk.name,
+              "apkUrl": url,
+              "sha256": sha,
+              "notes": notes,
+          }
+          pathlib.Path("version.json").write_text(
+              json.dumps(meta, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+          )
+          print(json.dumps(meta, ensure_ascii=False, indent=2))
+          PY
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.name }}
+          CODE: ${{ steps.version.outputs.code }}
+          APK: ${{ steps.artifacts.outputs.apk }}
+          SHA: ${{ steps.artifacts.outputs.sha }}
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.version.outputs.tag }}"
+          VERSION="${{ steps.version.outputs.name }}"
+          APK="${{ steps.artifacts.outputs.apk }}"
+          gh release create "$TAG" "$APK" "$APK.sha256" version.json \
+            --title "娅娅课表 v$VERSION" \
+            --notes-file release-notes.md \
+            --verify-tag

@@ -36,7 +36,10 @@ import com.university.timetable.ui.screen.WeekScreen
 import com.university.timetable.ui.screen.dialog.CourseEditorSheet
 import com.university.timetable.ui.screen.dialog.FullScreenOverlay
 import com.university.timetable.ui.screen.dialog.ImportDialog
+import com.university.timetable.ui.screen.dialog.UpdateDialog
 import com.university.timetable.ui.screen.sheet.ClassActionsSheet
+import com.university.timetable.update.UpdateViewModel
+import kotlinx.coroutines.delay
 import com.university.timetable.ui.tutorial.TutorialAnchors
 import com.university.timetable.ui.tutorial.TutorialHost
 import com.university.timetable.ui.tutorial.rememberTutorialController
@@ -53,6 +56,7 @@ object Pages {
 fun TimetableAppRoot(
     viewModel: MainViewModel,
     aiViewModel: com.university.timetable.ui.ai.AiViewModel,
+    updateViewModel: UpdateViewModel,
     darkTheme: Boolean,
     startOnToday: Boolean = false
 ) {
@@ -65,6 +69,17 @@ fun TimetableAppRoot(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val tutorial = rememberTutorialController()
+    val updateState by updateViewModel.state.collectAsStateWithLifecycle()
+
+    // 启动后延迟一小会儿再检查更新：不抢占首屏渲染，也不和首启引导弹窗同时出现。
+    LaunchedEffect(Unit) {
+        delay(2500)
+        updateViewModel.autoCheckIfDue()
+    }
+
+    LaunchedEffect(updateViewModel) {
+        updateViewModel.events.collect { snackbarHostState.showSnackbar(it) }
+    }
 
     // 首次启动引导：等「软件说明」弹窗关掉之后再弹，两者不会同时出现。
     LaunchedEffect(prefs.introSeen, prefs.tutorialSeen) {
@@ -225,7 +240,9 @@ fun TimetableAppRoot(
                             onOpenBackground = { backgroundVisible = true },
                             onOpenAi = { openAi() },
                             onPlayEgg = { easterEggVisible = true },
-                            onOpenTutorial = { tutorial.start() }
+                            onOpenTutorial = { tutorial.start() },
+                            onCheckUpdate = { updateViewModel.checkManually() },
+                            updateChecking = updateState.checking
                         )
                     }
                 }
@@ -420,6 +437,18 @@ fun TimetableAppRoot(
     if (easterEggVisible) {
         com.university.timetable.ui.screen.dialog.EasterEggDialog(
             onDismiss = { easterEggVisible = false }
+        )
+    }
+
+    // ---------------- 应用内更新（GitHub Releases） ----------------
+    if (updateState.release != null || updateState.phase != com.university.timetable.update.UpdateUiState.Phase.Idle) {
+        UpdateDialog(
+            state = updateState,
+            onDownload = { updateViewModel.startDownload() },
+            onInstall = { updateViewModel.installNow() },
+            onGrantPermission = { updateViewModel.openPermissionSettings() },
+            onPostpone = { updateViewModel.postpone() },
+            onDismiss = { updateViewModel.dismiss() }
         )
     }
 

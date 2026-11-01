@@ -25,6 +25,45 @@ val keystoreProperties = Properties().apply {
 }
 val hasReleaseKeystore = !keystoreProperties.getProperty("storeFile").isNullOrBlank()
 
+// ---- 应用版本号 ----
+// 版本名优先级：命令行 -Ptimetable.versionName=1.2.3 > gradle.properties > 兜底 1.0.0。
+// versionCode 一律由版本名推导（major*10000 + minor*100 + patch），保证
+// 「Release Tag / 构建产物 / 客户端读到的最新版本」三者用同一套规则，不会漂移。
+// CI 可用 -Ptimetable.versionCode 显式覆盖，但 workflow 会校验它和推导值一致。
+val appVersionName: String =
+    (project.findProperty("timetable.versionName") as String?)
+        ?.trim()
+        ?.removePrefix("v")
+        ?.takeIf { it.isNotEmpty() }
+        ?: "1.0.0"
+
+fun versionCodeOf(name: String): Int {
+    val core = name.substringBefore('-').substringBefore('+')
+    val parts = core.split('.')
+    require(parts.size == 3) { "版本名必须形如 1.2.3，当前为：$name" }
+    val numbers = parts.map { part ->
+        part.toIntOrNull() ?: error("版本名中的 \"$part\" 不是整数：$name")
+    }
+    require(numbers.all { it in 0..99 }) { "版本名每段必须落在 0..99 之间：$name" }
+    return numbers[0] * 10_000 + numbers[1] * 100 + numbers[2]
+}
+
+val appVersionCode: Int =
+    (project.findProperty("timetable.versionCode") as String?)?.trim()?.toIntOrNull()
+        ?: versionCodeOf(appVersionName)
+
+require(appVersionCode > 221) {
+    "versionCode 必须大于历史上线过的 221（v2.2.1），否则已安装用户无法覆盖升级：$appVersionCode"
+}
+
+// 更新渠道仓库：客户端只读 BuildConfig，代码里不再出现第二处仓库地址。
+val githubOwner: String =
+    (project.findProperty("timetable.github.owner") as String?)?.trim()?.takeIf { it.isNotEmpty() }
+        ?: "XiaozhuangXzsg"
+val githubRepo: String =
+    (project.findProperty("timetable.github.repo") as String?)?.trim()?.takeIf { it.isNotEmpty() }
+        ?: "Schedule"
+
 android {
     namespace = "com.university.timetable"
     compileSdk = 37
@@ -33,10 +72,14 @@ android {
         applicationId = "com.university.timetable"
         minSdk = 26
         targetSdk = 37
-        versionCode = 221
-        versionName = "2.2.1"
+        versionCode = appVersionCode
+        versionName = appVersionName
         vectorDrawables { useSupportLibrary = true }
         resourceConfigurations += listOf("zh", "en")
+
+        // 应用内更新所需的仓库信息（集中配置，见 gradle.properties）
+        buildConfigField("String", "GITHUB_OWNER", "\"$githubOwner\"")
+        buildConfigField("String", "GITHUB_REPO", "\"$githubRepo\"")
     }
 
     signingConfigs {
@@ -100,6 +143,21 @@ android {
             // "Method ... not mocked"，纯 JVM 测试才能覆盖仓库/刷新器的逻辑。
             isReturnDefaultValues = true
         }
+    }
+}
+
+// CI 用它校验 Tag 与产物版本是否一致；本地也可 `gradlew printVersionInfo` 自查。
+tasks.register("printVersionInfo") {
+    description = "打印本次构建使用的 versionName / versionCode / GitHub 仓库"
+    val name = appVersionName
+    val code = appVersionCode
+    val owner = githubOwner
+    val repo = githubRepo
+    doLast {
+        println("VERSION_NAME=$name")
+        println("VERSION_CODE=$code")
+        println("GITHUB_OWNER=$owner")
+        println("GITHUB_REPO=$repo")
     }
 }
 

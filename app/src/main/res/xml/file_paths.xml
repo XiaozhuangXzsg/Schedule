@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FileProvider 对外暴露的路径白名单。
+    只有「应用内更新」下载的 APK 会被共享，且仅通过一次性授权的 content:// URI。
+-->
+<paths>
+    <!-- files/updates/：更新包下载目录（应用私有，不需存储权限） -->
+    <files-path
+        name="updates"
+        path="updates/" />
+    <!-- 兜底：万一下载逻辑回退到缓存目录，也不会因路径未声明而崩溃 -->
+    <cache-path
+        name="updates_cache"
+        path="updates/" />
+</paths>
