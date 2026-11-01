@@ -8,13 +8,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.dp
 import com.university.timetable.ui.theme.LocalIsDark
+import com.university.timetable.ui.theme.LocalLiquidGlassStyle
 import com.university.timetable.ui.theme.LocalTimetableColors
 
 /**
@@ -38,9 +41,18 @@ object GlassRadius {
 // 不透明度
 // ---------------------------------------------------------------------------
 
-/** 大块卡片的玻璃底色：通透一些，让用户自定义的背景图透上来。 */
+/**
+ * 大块卡片的玻璃底色：通透一些，让用户自定义的背景图透上来。
+ *
+ * 液态玻璃模式下再放开一档——它的底色本身就带 alpha（见 `TimetableColors` 的
+ * `surfaceCard`），两层相乘后大约落在 50%–63%，才真的透得出后面的环境光。
+ */
 @Composable
-fun glassCardAlpha(): Float = if (LocalIsDark.current) 0.78f else 0.82f
+fun glassCardAlpha(): Float = when {
+    LocalLiquidGlassStyle.current -> if (LocalIsDark.current) 0.86f else 0.88f
+    LocalIsDark.current -> 0.78f
+    else -> 0.82f
+}
 
 /**
  * 弹窗 / 浮层的玻璃底色：留更多不透明度。
@@ -49,20 +61,28 @@ fun glassCardAlpha(): Float = if (LocalIsDark.current) 0.78f else 0.82f
  * 而不是真的看穿过去。
  */
 @Composable
-fun glassPanelAlpha(): Float = if (LocalIsDark.current) 0.90f else 0.92f
+fun glassPanelAlpha(): Float = when {
+    LocalLiquidGlassStyle.current -> if (LocalIsDark.current) 0.86f else 0.88f
+    LocalIsDark.current -> 0.90f
+    else -> 0.92f
+}
 
 // ---------------------------------------------------------------------------
 // 两种用法
 // ---------------------------------------------------------------------------
 
 /**
- * ColorOS 17 凝光视效的玻璃材质容器（自带形状）。
+ * 凝光视效的玻璃材质容器（自带形状）。
  *
  * 共三层：
  * 1. **半透明底色**——故意用真 alpha 而不是实色，这样用户自定义的页面背景图能透上来，
  *    配合应用已有的背景模糊就是「半透明磨砂」；
  * 2. **纵向厚度渐变**——上缘提亮、下缘压暗，模拟玻璃的厚度；
  * 3. **光感描边**——1dp 的渐变描边，上亮下暗，是凝光视效里最出效果的一笔。
+ *
+ * 打开「液态玻璃」风格后（[LocalLiquidGlassStyle]），同一块玻璃会再加三样东西：
+ * **斜向镜面扫光**（模拟光线掠过玻璃表面的反射）、**底部接触阴影**（让玻璃像浮在背景上，
+ * 而不是贴上去）、以及**更亮的边缘高光 + 柔和外投影**。
  *
  * 这里**不做真正的背景模糊**：Compose 的 `Modifier.blur` 只模糊自身内容，
  * `RenderEffect` 又不跨窗口，应用内拿不到下层已绘制像素。用透明度 + 高光近似，
@@ -83,16 +103,39 @@ fun GlassSurface(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val dark = LocalIsDark.current
-    Box(
-        modifier = modifier
-            .clip(shape)
-            .drawBehind {
-                drawRect(tint.copy(alpha = tint.alpha * tintAlpha))
-                drawRect(depthBrush(dark))
-            }
-            .border(width = 1.dp, brush = rimBrush(dark), shape = shape),
-        content = content
-    )
+    val liquid = LocalLiquidGlassStyle.current
+
+    if (liquid) {
+        Box(
+            modifier = modifier
+                .shadow(
+                    elevation = if (dark) 16.dp else 12.dp,
+                    shape = shape,
+                    clip = false,
+                    ambientColor = Color.Black.copy(alpha = if (dark) 0.42f else 0.16f),
+                    spotColor = Color.Black.copy(alpha = if (dark) 0.46f else 0.22f)
+                )
+                .clip(shape)
+                .drawBehind {
+                    drawRect(liquidBaseBrush(tint, tintAlpha))
+                    drawLiquidSheen(dark)
+                    drawTopEdge(dark, short = true)
+                }
+                .border(width = 1.dp, brush = liquidRimBrush(dark), shape = shape),
+            content = content
+        )
+    } else {
+        Box(
+            modifier = modifier
+                .clip(shape)
+                .drawBehind {
+                    drawRect(tint.copy(alpha = tint.alpha * tintAlpha))
+                    drawRect(depthBrush(dark))
+                }
+                .border(width = 1.dp, brush = rimBrush(dark), shape = shape),
+            content = content
+        )
+    }
 }
 
 /**
@@ -101,6 +144,9 @@ fun GlassSurface(
  * 用法是把原有的 `.background(tint)` 直接换成 `.glassLayer(tint)`：底色会变成半透明、
  * 叠上纵向厚度渐变，并在上下缘各描一道光感边。因为外层已经 `.clip(shape)` 过，
  * 这三样都会被那个圆角裁掉，所以这里不需要知道具体形状——这也是它能一处处机械替换的原因。
+ *
+ * 打开「液态玻璃」风格后同样会多出镜面扫光与底部接触阴影，且底色换成真正的纵向渐变，
+ * 让弹窗/浮层看起来是「一块有厚度的玻璃」而不是「一个压暗的矩形」。
  *
  * @param tintAlpha 底色不透明度的**倍数**（与 [tint] 自带的 alpha 相乘），默认取
  *   [glassPanelAlpha]（弹窗场景）；大块卡片用 [GlassSurface] 更合适。
@@ -111,6 +157,29 @@ fun Modifier.glassLayer(
     tintAlpha: Float = glassPanelAlpha(),
 ): Modifier {
     val dark = LocalIsDark.current
+    val liquid = LocalLiquidGlassStyle.current
+
+    if (liquid) {
+        return this.drawBehind {
+            drawRect(liquidBaseBrush(tint, tintAlpha))
+            drawLiquidSheen(dark)
+
+            val edge = 1.dp.toPx()
+            if (size.width > 0f && size.height > edge * 2) {
+                drawRect(
+                    brush = liquidEdgeBrush(dark, top = true),
+                    topLeft = Offset.Zero,
+                    size = Size(size.width, edge)
+                )
+                drawRect(
+                    brush = edgeBrush(dark, top = false),
+                    topLeft = Offset(0f, size.height - edge),
+                    size = Size(size.width, edge)
+                )
+            }
+        }
+    }
+
     return this.drawBehind {
         drawRect(tint.copy(alpha = tint.alpha * tintAlpha))
         drawRect(depthBrush(dark))
@@ -129,6 +198,91 @@ fun Modifier.glassLayer(
             )
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// 液态玻璃的笔刷
+// ---------------------------------------------------------------------------
+
+/**
+ * 液态玻璃的底色：一道纵向渐变。
+ *
+ * 不是单色 —— 真实玻璃因为上方采光更多，上沿总比下沿亮一点；把这点做进底色，
+ * 玻璃才有「厚度」，否则再高的描边也像贴纸。
+ */
+private fun liquidBaseBrush(tint: Color, tintAlpha: Float): Brush {
+    val alpha = (tint.alpha * tintAlpha).coerceIn(0f, 1f)
+    return Brush.verticalGradient(
+        0f to tint.copy(alpha = (alpha * 1.12f).coerceAtMost(1f)),
+        0.55f to tint.copy(alpha = alpha),
+        1f to tint.copy(alpha = alpha * 0.82f)
+    )
+}
+
+/**
+ * 镜面扫光 + 底部接触阴影。
+ *
+ * 扫光从左上角斜向右下、在 60% 处消失，模拟斜面反射；接触阴影只在最底部 28% 出现，
+ * 让玻璃和背景之间有一道极淡的"压痕"，这是它看起来浮起来的关键。
+ */
+private fun DrawScope.drawLiquidSheen(dark: Boolean) {
+    drawRect(
+        brush = Brush.linearGradient(
+            0f to Color.White.copy(alpha = if (dark) 0.16f else 0.34f),
+            0.30f to Color.White.copy(alpha = if (dark) 0.05f else 0.10f),
+            0.62f to Color.Transparent,
+            1f to Color.Transparent,
+            start = Offset.Zero,
+            end = Offset(size.width * 0.85f, size.height)
+        )
+    )
+    drawRect(
+        brush = Brush.verticalGradient(
+            0.72f to Color.Transparent,
+            1f to Color.Black.copy(alpha = if (dark) 0.18f else 0.07f)
+        )
+    )
+}
+
+/** 在容器最上沿补一条短促的高光线（两端渐隐，避免圆角处出现硬边）。 */
+private fun DrawScope.drawTopEdge(dark: Boolean, short: Boolean) {
+    val edge = 1.dp.toPx()
+    if (size.width <= 0f || size.height <= edge * 2) return
+    val inset = if (short) size.width * 0.08f else 0f
+    drawRect(
+        brush = liquidEdgeBrush(dark, top = true),
+        topLeft = Offset(inset, 0f),
+        size = Size(size.width - inset * 2f, edge)
+    )
+}
+
+/** 液态玻璃的边缘高光：比普通模式更亮一点，才压得住更薄的底。 */
+private fun liquidEdgeBrush(dark: Boolean, top: Boolean): Brush {
+    val peak = if (dark) 0.30f else if (top) 0.98f else 0.10f
+    val base = if (dark) Color.White else if (top) Color.White else Color.Black
+    return Brush.horizontalGradient(
+        0f to base.copy(alpha = 0f),
+        0.12f to base.copy(alpha = peak),
+        0.88f to base.copy(alpha = peak),
+        1f to base.copy(alpha = 0f)
+    )
+}
+
+/** 液态玻璃的整圈描边：上亮下暗，比普通模式更细更透。 */
+private fun liquidRimBrush(dark: Boolean): Brush = if (dark) {
+    Brush.verticalGradient(
+        0f to Color.White.copy(alpha = 0.34f),
+        0.30f to Color.White.copy(alpha = 0.07f),
+        0.72f to Color.White.copy(alpha = 0.05f),
+        1f to Color.White.copy(alpha = 0.22f)
+    )
+} else {
+    Brush.verticalGradient(
+        0f to Color.White.copy(alpha = 1f),
+        0.28f to Color.White.copy(alpha = 0.28f),
+        0.72f to Color.Black.copy(alpha = 0.02f),
+        1f to Color.Black.copy(alpha = 0.10f)
+    )
 }
 
 // ---------------------------------------------------------------------------

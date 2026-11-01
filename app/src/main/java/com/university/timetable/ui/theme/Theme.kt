@@ -1,6 +1,7 @@
 package com.university.timetable.ui.theme
 
 import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -8,6 +9,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -88,6 +90,38 @@ val LocalIsDark = staticCompositionLocalOf { false }
 val LocalColumbinaStyle = staticCompositionLocalOf { false }
 
 /**
+ * 是否启用「液态玻璃（Liquid Glass）」视觉风格。
+ *
+ * 打开后玻璃面板会更薄更透、带镜面扫光与接触阴影，页面背景会出现柔和环境光；
+ * 关掉就是原来的样子。它只影响"长什么样"，不参与任何业务判断。
+ */
+val LocalLiquidGlassStyle = staticCompositionLocalOf { false }
+
+/**
+ * 系统是否要求「减少动态效果」。
+ *
+ * 无障碍设置里把动画速度调到 0（或关闭动画）时，所有 Spring / 过渡都应退化成瞬时切换。
+ * 读取 Settings.Global 不需要权限，且这里只在组合首次执行时读一次。
+ */
+val LocalReduceMotion = staticCompositionLocalOf { false }
+
+/** 读取系统的动画缩放设置，得到 [LocalReduceMotion] 的值。 */
+@Composable
+fun rememberReduceMotion(): Boolean {
+    val context = LocalContext.current
+    return remember(context) {
+        val resolver = context.contentResolver
+        val animator = Settings.Global.getFloat(
+            resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f
+        )
+        val transition = Settings.Global.getFloat(
+            resolver, Settings.Global.TRANSITION_ANIMATION_SCALE, 1f
+        )
+        animator == 0f || transition == 0f
+    }
+}
+
+/**
  * 页面文字颜色令牌。
  *
  * **约定**：界面上所有正文与标题都应显式使用这两个（或 `MaterialTheme.colorScheme.onSurface`），
@@ -111,18 +145,20 @@ fun UniversityTimetableTheme(
     themePresetIndex: Int = 0,
     columbina: Boolean = false,
     useDynamicColor: Boolean = false,
+    liquidGlass: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
+    val reduceMotion = rememberReduceMotion()
     // 配色计算抽到 TimetableScheme.kt 的纯函数里，桌面小组件复用同一份逻辑。
     val scheme = if (useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         TimetableScheme(
             colorScheme = if (darkTheme) dynamicDarkColorScheme(context)
             else dynamicLightColorScheme(context),
-            extras = timetableColors(darkTheme, columbina)
+            extras = timetableColors(darkTheme, columbina, liquidGlass)
         )
     } else {
-        timetableScheme(darkTheme, themePresetIndex, columbina)
+        timetableScheme(darkTheme, themePresetIndex, columbina, liquidGlass)
     }
     val colorScheme = scheme.colorScheme
     val extras = scheme.extras
@@ -131,6 +167,8 @@ fun UniversityTimetableTheme(
         LocalTimetableColors provides extras,
         LocalIsDark provides darkTheme,
         LocalColumbinaStyle provides columbina,
+        LocalLiquidGlassStyle provides liquidGlass,
+        LocalReduceMotion provides reduceMotion,
         // Compose 的 LocalContentColor 默认值是 Color.Black，只有 Surface / Card 等容器才会改写它。
         // 之前主题根节点没有提供，导致 Dialog（不在 Scaffold 的 Surface 之内）里所有
         // 未显式指定颜色的 Text / Icon 在夜间模式下都是黑字，看不见。

@@ -762,6 +762,16 @@ class MainViewModel(
         refreshWidgets("切换哥伦比娅风格")
     }
 
+    /**
+     * 液态玻璃视觉风格开关。
+     *
+     * 只影响软件内的观感（玻璃厚度、扫光、环境光、动效），桌面卡片沿用原来的凝光样式，
+     * 所以这里不需要刷新卡片。
+     */
+    fun setLiquidGlass(value: Boolean) = viewModelScope.launch {
+        prefsRepo.setLiquidGlass(value)
+    }
+
     fun setSemesterStart(iso: String) = viewModelScope.launch {
         prefsRepo.setSemesterStart(iso)
         refreshWidgets("修改学期开始日期")

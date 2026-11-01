@@ -35,12 +35,12 @@ val appVersionName: String =
         ?.trim()
         ?.removePrefix("v")
         ?.takeIf { it.isNotEmpty() }
-        ?: "3.0.0"
+        ?: "3.1.0"
 
 fun versionCodeOf(name: String): Int {
     val core = name.substringBefore('-').substringBefore('+')
     val parts = core.split('.')
-    require(parts.size == 3) { "版本名必须形如 3.0.0，当前为：$name" }
+    require(parts.size == 3) { "版本名必须形如 3.1.0，当前为：$name" }
     val numbers = parts.map { part ->
         part.toIntOrNull() ?: error("版本名中的 \"$part\" 不是整数：$name")
     }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -23,6 +24,7 @@ import com.university.timetable.data.prefs.PageKeys
 import com.university.timetable.data.prefs.UiPreferences
 import com.university.timetable.ui.theme.LocalColumbinaStyle
 import com.university.timetable.ui.theme.LocalIsDark
+import com.university.timetable.ui.theme.LocalLiquidGlassStyle
 import com.university.timetable.ui.theme.LocalTimetableColors
 import com.university.timetable.ui.theme.ThemePresets
 import com.university.timetable.util.ImageLoader
@@ -83,10 +85,81 @@ fun PageBackground(
                     )
             )
         }
+        if (LocalLiquidGlassStyle.current) {
+            LiquidGlassBackdrop(
+                modifier = Modifier.matchParentSize(),
+                baseColor = baseColor,
+                hasImage = bitmap != null
+            )
+        }
         if (LocalColumbinaStyle.current) {
             ColumbinaVeil(modifier = Modifier.matchParentSize())
         }
         content()
+    }
+}
+
+/**
+ * 液态玻璃风格的环境光背景。
+ *
+ * 玻璃要「透出颜色」才像玻璃——如果背后是一块纯色，再好的高光也只是磨砂塑料。
+ * 这里用主题色画三团极大的径向柔光（几乎等于渐变），让页面各处色调略有差别：
+ * 卡片压在哪个位置，透上来的就是那一小片颜色，这就是所谓的「环境色彩渗透」。
+ *
+ * 三层光都刻意压得很淡（浅色 12%–22%，深色 16%–30%），文字对比度不受影响；
+ * 用户自己设了背景图时再减半，避免和图片打架。
+ */
+@Composable
+private fun LiquidGlassBackdrop(
+    modifier: Modifier = Modifier,
+    baseColor: Color,
+    hasImage: Boolean
+) {
+    val dark = LocalIsDark.current
+    val scheme = MaterialTheme.colorScheme
+    // 有背景图时环境光要收敛，否则两层图像会糊成一片
+    val scale = if (hasImage) 0.45f else 1f
+    val a1 = (if (dark) 0.22f else 0.15f) * scale
+    val a2 = (if (dark) 0.16f else 0.11f) * scale
+    val a3 = (if (dark) 0.14f else 0.10f) * scale
+
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+
+        // 顶部到中部的纵向提亮：玻璃上方总是更亮
+        drawRect(
+            brush = Brush.verticalGradient(
+                0f to Color.White.copy(alpha = if (dark) 0.03f else 0.38f),
+                0.42f to Color.Transparent,
+                1f to baseColor.copy(alpha = if (dark) 0.35f else 0.08f)
+            )
+        )
+        // 左上：主题色主光。半径刻意压在 0.7w 以内——光要聚在角落，
+        // 整页均匀铺一层就成了「换了个背景色」，而不是「有环境光」。
+        drawRect(
+            brush = Brush.radialGradient(
+                colors = listOf(scheme.primary.copy(alpha = a1), Color.Transparent),
+                center = Offset(w * 0.06f, h * 0.01f),
+                radius = w * 0.72f
+            )
+        )
+        // 右上：强调色副光，制造冷暖对比
+        drawRect(
+            brush = Brush.radialGradient(
+                colors = listOf(scheme.tertiary.copy(alpha = a2), Color.Transparent),
+                center = Offset(w * 0.98f, h * 0.30f),
+                radius = w * 0.62f
+            )
+        )
+        // 底部：次级色，把页面下沿压出一点空间感
+        drawRect(
+            brush = Brush.radialGradient(
+                colors = listOf(scheme.secondary.copy(alpha = a3), Color.Transparent),
+                center = Offset(w * 0.42f, h * 1.04f),
+                radius = w * 0.78f
+            )
+        )
     }
 }
 

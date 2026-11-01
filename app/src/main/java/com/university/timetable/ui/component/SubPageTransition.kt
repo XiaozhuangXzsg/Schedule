@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -19,6 +20,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import com.university.timetable.data.prefs.TransitionStyle
+import com.university.timetable.ui.theme.LocalReduceMotion
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 
@@ -75,6 +77,8 @@ fun SubPageTransition(
     onExited: () -> Unit = {},
     content: @Composable () -> Unit
 ) {
+    // 系统打开「减少动态效果」时，转场退化为瞬时切换（仍然保留卸载回调的时序）
+    val reduceMotion = LocalReduceMotion.current
     val transitionState = remember { MutableTransitionState(false) }
     LaunchedEffect(visible) { transitionState.targetState = visible }
 
@@ -88,7 +92,7 @@ fun SubPageTransition(
         }
     }
 
-    val enter = when (style) {
+    val enter = if (reduceMotion) fadeIn(animationSpec = snap()) else when (style) {
         TransitionStyle.ZOOM ->
             scaleIn(
                 initialScale = 0.92f,
@@ -111,7 +115,7 @@ fun SubPageTransition(
             ) + fadeIn(animationSpec = tween(IN_DURATION))
     }
 
-    val exit = when (style) {
+    val exit = if (reduceMotion) fadeOut(animationSpec = snap()) else when (style) {
         TransitionStyle.ZOOM ->
             scaleOut(
                 targetScale = 0.94f,

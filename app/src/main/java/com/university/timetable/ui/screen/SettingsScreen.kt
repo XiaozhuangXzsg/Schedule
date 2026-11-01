@@ -436,6 +436,17 @@ fun SettingsScreen(
                 )
 
                 SettingSwitch(
+                    "液态玻璃风格",
+                    prefs.liquidGlass
+                ) { viewModel.setLiquidGlass(it) }
+                Text(
+                    text = "更薄更透的玻璃面板：带镜面扫光、环境光背景与柔和投影，动画也会更弹性；关闭则回到原来的凝光样式",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.mutedText,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                SettingSwitch(
                     "跟随系统深浅色",
                     prefs.followSystemTheme
                 ) { viewModel.setFollowSystem(it) }

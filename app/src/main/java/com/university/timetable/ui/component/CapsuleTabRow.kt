@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -39,6 +40,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.university.timetable.ui.theme.LocalReduceMotion
 import com.university.timetable.ui.theme.LocalTimetableColors
 import com.university.timetable.ui.tutorial.tutorialAnchor
 import kotlin.math.abs
@@ -69,6 +71,7 @@ fun CapsuleTabRow(
     modifier: Modifier = Modifier
 ) {
     val colors = LocalTimetableColors.current
+    val reduceMotion = LocalReduceMotion.current
     val density = LocalDensity.current
     val count = tabs.size.coerceAtLeast(1)
     val haptics = rememberSoftHaptics()
@@ -82,7 +85,8 @@ fun CapsuleTabRow(
 
     val indicatorOffset by animateDpAsState(
         targetValue = pillWidthDp * safePosition,
-        animationSpec = spring(
+        // 系统打开「减少动态效果」时直接吸附到位，不做弹簧
+        animationSpec = if (reduceMotion) snap() else spring(
             dampingRatio = Spring.DampingRatioNoBouncy,
             stiffness = Spring.StiffnessMediumLow
         ),
@@ -130,12 +134,13 @@ fun CapsuleTabRow(
                         } else {
                             colors.mutedText
                         },
-                        animationSpec = tween(220),
+                        animationSpec = if (reduceMotion) snap() else tween(220),
                         label = "capsuleContent$index"
                     )
                     val iconScale by animateFloatAsState(
                         targetValue = 1f + 0.08f * selection,
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                        animationSpec = if (reduceMotion) snap()
+                        else spring(dampingRatio = Spring.DampingRatioMediumBouncy),
                         label = "capsuleScale$index"
                     )
 

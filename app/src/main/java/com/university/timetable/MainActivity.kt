@@ -84,7 +84,8 @@ class MainActivity : ComponentActivity() {
             UniversityTimetableTheme(
                 darkTheme = dark,
                 themePresetIndex = prefs.themePreset,
-                columbina = prefs.columbinaStyle
+                columbina = prefs.columbinaStyle,
+                liquidGlass = prefs.liquidGlass
             ) {
                 // 触感反馈开关：在整棵 UI 树上生效，子组件通过 rememberSoftHaptics() 取用。
                 CompositionLocalProvider(

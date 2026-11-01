@@ -143,6 +143,8 @@ data class UiPreferences(
     val avatarUri: String = "",
     /** 哥伦比娅（娅娅）主题风格：蔷薇紫金配色 + 羽翼/星钻装饰 */
     val columbinaStyle: Boolean = true,
+    /** 液态玻璃（Apple Liquid Glass）视觉风格，只改观感，不影响任何业务逻辑 */
+    val liquidGlass: Boolean = false,
     /** 周视图是否显示「当前时间轴条」 */
     val weekNowLine: Boolean = true,
     /** 时间轴条样式，见 [NowLineStyle] */
@@ -241,6 +243,7 @@ class PreferencesRepository(private val context: Context) {
         val nickname = stringPreferencesKey("nickname")
         val avatarUri = stringPreferencesKey("avatar_uri")
         val columbinaStyle = booleanPreferencesKey("columbina_style")
+        val liquidGlass = booleanPreferencesKey("liquid_glass")
         val weekNowLine = booleanPreferencesKey("week_now_line")
         val weekNowLineStyle = intPreferencesKey("week_now_line_style")
         val weekNowLineColor = intPreferencesKey("week_now_line_color")
@@ -289,6 +292,7 @@ class PreferencesRepository(private val context: Context) {
             nickname = p[Keys.nickname] ?: UiPreferences.DEFAULT_NICKNAME,
             avatarUri = p[Keys.avatarUri] ?: "",
             columbinaStyle = p[Keys.columbinaStyle] ?: true,
+            liquidGlass = p[Keys.liquidGlass] ?: false,
             weekNowLine = p[Keys.weekNowLine] ?: true,
             weekNowLineStyle = p[Keys.weekNowLineStyle] ?: NowLineStyle.DOT,
             weekNowLineColor = p[Keys.weekNowLineColor] ?: UiPreferences.UNSET,
@@ -361,6 +365,8 @@ class PreferencesRepository(private val context: Context) {
 
     /** 哥伦比娅（娅娅）主题风格开关。 */
     suspend fun setColumbinaStyle(value: Boolean) = edit { it[Keys.columbinaStyle] = value }
+
+    suspend fun setLiquidGlass(value: Boolean) = edit { it[Keys.liquidGlass] = value }
 
     /** 周视图「当前时间轴条」开关。 */
     suspend fun setWeekNowLine(value: Boolean) = edit { it[Keys.weekNowLine] = value }

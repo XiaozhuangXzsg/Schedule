@@ -28,7 +28,30 @@ data class TimetableScheme(
  * @param dark 是否深色
  * @param columbina 是否启用「娅娅 · 哥伦比娅」风格（优先级高于自选主题色）
  */
-fun timetableColors(dark: Boolean, columbina: Boolean): TimetableColors = when {
+fun timetableColors(
+    dark: Boolean,
+    columbina: Boolean,
+    liquid: Boolean = false
+): TimetableColors {
+    val base = baseTimetableColors(dark, columbina)
+    return if (liquid) base.asLiquidGlass(dark) else base
+}
+
+/**
+ * 把一套实色配色改写成「液态玻璃」用的半透明配色。
+ *
+ * 只改"面"的颜色（卡片、胶囊），不改文字色与状态色：玻璃需要有东西可以透上来，
+ * 底色越不透明就越像一块塑料。透明度都压在 60%–90%，保证文字对比度仍然够。
+ */
+private fun TimetableColors.asLiquidGlass(dark: Boolean): TimetableColors = copy(
+    gridLine = if (dark) Color(0x1FFFFFFF) else Color(0x0D141821),
+    surfaceCard = if (dark) Color(0x991A1B21) else Color(0xB8FFFFFF),
+    surfaceCardElevated = if (dark) Color(0xAD22242C) else Color(0xD9FFFFFF),
+    capsuleContainer = if (dark) Color(0x2EFFFFFF) else Color(0x8AFFFFFF),
+    capsuleSelected = if (dark) Color(0x3DFFFFFF) else Color(0xE6FFFFFF)
+)
+
+private fun baseTimetableColors(dark: Boolean, columbina: Boolean): TimetableColors = when {
     columbina && dark -> TimetableColors(
         nowIndicator = Color(0xFFFF7AA8),
         gridLine = Color(0x1FFFC9E4),
@@ -134,7 +157,8 @@ fun timetableColors(dark: Boolean, columbina: Boolean): TimetableColors = when {
 fun timetableScheme(
     dark: Boolean,
     presetIndex: Int,
-    columbina: Boolean
+    columbina: Boolean,
+    liquid: Boolean = false
 ): TimetableScheme {
     val preset = if (columbina) ThemePresets.columbina else ThemePresets.byIndex(presetIndex)
 
@@ -204,7 +228,7 @@ fun timetableScheme(
         )
     }
 
-    return TimetableScheme(colorScheme, timetableColors(dark, columbina))
+    return TimetableScheme(colorScheme, timetableColors(dark, columbina, liquid))
 }
 
 /** 系统是否处于深色模式（供非 Compose 场景使用，例如桌面小组件）。 */

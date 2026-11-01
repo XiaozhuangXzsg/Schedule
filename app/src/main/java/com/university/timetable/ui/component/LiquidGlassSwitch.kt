@@ -2,6 +2,7 @@ package com.university.timetable.ui.component
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -30,6 +31,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.university.timetable.ui.theme.LocalIsDark
+import com.university.timetable.ui.theme.LocalReduceMotion
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.sin
@@ -71,6 +73,7 @@ fun LiquidGlassSwitch(
     enabled: Boolean = true
 ) {
     val dark = LocalIsDark.current
+    val reduceMotion = LocalReduceMotion.current
     val accent = MaterialTheme.colorScheme.primary
 
     val interactionSource = remember { MutableInteractionSource() }
@@ -86,7 +89,8 @@ fun LiquidGlassSwitch(
         direction = if (checked) 1f else -1f
         progress.animateTo(
             targetValue = if (checked) 1f else 0f,
-            animationSpec = spring(
+            // 「减少动态效果」下直接跳到位：既没有回弹，也没有液体的拉伸形变
+            animationSpec = if (reduceMotion) snap() else spring(
                 dampingRatio = Spring.DampingRatioLowBouncy,
                 stiffness = Spring.StiffnessMediumLow
             )
