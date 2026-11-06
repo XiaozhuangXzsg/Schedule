@@ -35,7 +35,7 @@ val appVersionName: String =
         ?.trim()
         ?.removePrefix("v")
         ?.takeIf { it.isNotEmpty() }
-        ?: "3.1.0"
+        ?: "3.1.1"
 
 fun versionCodeOf(name: String): Int {
     val core = name.substringBefore('-').substringBefore('+')

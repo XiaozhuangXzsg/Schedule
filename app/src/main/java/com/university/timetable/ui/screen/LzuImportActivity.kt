@@ -23,12 +23,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBackIos
@@ -369,8 +372,16 @@ private fun LzuImportScreen(
 ) {
     val colors = LocalTimetableColors.current
 
+    // 这个页面是 edge-to-edge 的（enableEdgeToEdge），窗口内容会一直画到状态栏和
+    // 手势条下面。之前顶栏 Row 从 y=0 开始画，就出现了「课表上方那一栏与系统状态栏
+    // 重叠」的问题。这里统一用 safeDrawing 内边距让开：状态栏、导航栏/手势条、刘海与
+    // 输入法键盘（登录要输账号密码）都算在里面，各边取并集，不会和后面的 padding 叠加。
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+        ) {
             // 顶栏
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -460,6 +471,7 @@ private fun LzuImportScreen(
             onClick = onImport,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
                 .padding(end = 20.dp, bottom = 28.dp),
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -482,6 +494,7 @@ private fun LzuImportScreen(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
                     .padding(bottom = 100.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
